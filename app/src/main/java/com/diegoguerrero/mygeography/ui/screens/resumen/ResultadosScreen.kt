@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.diegoguerrero.mygeography.data.model.RegionQuiz
@@ -520,7 +521,8 @@ private fun ItemDetalleRespuesta(
                                     text = "(${respuesta.opcionSeleccionada.nombre})",
                                     color = TextMuted,
                                     fontSize = 11.sp,
-                                    maxLines = 1
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
@@ -533,7 +535,8 @@ private fun ItemDetalleRespuesta(
                                 color = CorrectGreen,
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Medium,
-                                maxLines = 1
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         } else {
                             Column(modifier = Modifier.padding(top = 2.dp)) {
@@ -541,14 +544,16 @@ private fun ItemDetalleRespuesta(
                                     text = "Elegiste: ${respuesta.opcionSeleccionada.capital}",
                                     color = WrongRed,
                                     fontSize = 11.5.sp,
-                                    maxLines = 1
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = "Correcta: ${paisCorrecto.capital}",
                                     color = CorrectGreen,
                                     fontSize = 11.5.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    maxLines = 1
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }

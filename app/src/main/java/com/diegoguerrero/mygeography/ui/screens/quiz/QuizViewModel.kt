@@ -22,6 +22,7 @@ data class QuizUiState(
     val incluirDependientes: Boolean = true,
     val preguntas: List<QuizPregunta> = emptyList(),
     val indiceActual: Int = 0,
+    val maxIndiceAlcanzado: Int = 0,
     val respuestasPorIndice: Map<Int, RespuestaQuiz> = emptyMap(),
     val quizTerminado: Boolean = false,
     val mostrarDialogoSalir: Boolean = false
@@ -46,6 +47,10 @@ data class QuizUiState(
 
     val puedeAvanzar: Boolean
         get() = estaContestada
+
+    // El botón de avanzar manualmente solo se activa si se ha vuelto atrás a una pregunta previa
+    val puedeAvanzarManualmente: Boolean
+        get() = estaContestada && (indiceActual < maxIndiceAlcanzado)
 
     val puedeRetroceder: Boolean
         get() = indiceActual > 0
@@ -76,11 +81,14 @@ class QuizViewModel(
     private val _uiState = MutableStateFlow(QuizUiState())
     val uiState: StateFlow<QuizUiState> = _uiState.asStateFlow()
 
+    private var autoAvanzarJob: Job? = null
+
     fun iniciarQuiz(
         tipo: TipoQuiz,
         region: RegionQuiz = RegionQuiz.GLOBAL,
         incluirDependientes: Boolean = true
     ) {
+        autoAvanzarJob?.cancel()
         val preguntas = when (tipo) {
             TipoQuiz.BANDERAS -> repository.generarQuizBanderas(region, incluirDependientes)
             TipoQuiz.CAPITALES -> repository.generarQuizCapitales(region, incluirDependientes)
@@ -92,6 +100,7 @@ class QuizViewModel(
             incluirDependientes = incluirDependientes,
             preguntas = preguntas,
             indiceActual = 0,
+            maxIndiceAlcanzado = 0,
             respuestasPorIndice = emptyMap(),
             quizTerminado = false,
             mostrarDialogoSalir = false
@@ -117,9 +126,17 @@ class QuizViewModel(
                 respuestasPorIndice = it.respuestasPorIndice + (it.indiceActual to nuevaRespuesta)
             )
         }
+
+        // Auto-avanzar automáticamente a la siguiente pregunta tras breve pausa para ver la corrección
+        autoAvanzarJob?.cancel()
+        autoAvanzarJob = viewModelScope.launch {
+            delay(1100)
+            avanzarSiguientePregunta()
+        }
     }
 
     fun retrocederPregunta() {
+        autoAvanzarJob?.cancel()
         val currentState = _uiState.value
         if (currentState.puedeRetroceder) {
             _uiState.update { it.copy(indiceActual = it.indiceActual - 1) }
@@ -127,13 +144,20 @@ class QuizViewModel(
     }
 
     fun avanzarSiguientePregunta() {
+        autoAvanzarJob?.cancel()
         val currentState = _uiState.value
         if (!currentState.puedeAvanzar) return
 
         if (currentState.esUltimaPregunta) {
             _uiState.update { it.copy(quizTerminado = true) }
         } else {
-            _uiState.update { it.copy(indiceActual = it.indiceActual + 1) }
+            val nuevoIndice = currentState.indiceActual + 1
+            _uiState.update {
+                it.copy(
+                    indiceActual = nuevoIndice,
+                    maxIndiceAlcanzado = maxOf(it.maxIndiceAlcanzado, nuevoIndice)
+                )
+            }
         }
     }
 

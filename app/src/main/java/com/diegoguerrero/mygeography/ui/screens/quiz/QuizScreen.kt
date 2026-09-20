@@ -22,7 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -195,10 +198,10 @@ fun QuizScreen(
                         )
                     }
 
-                    // Botón Siguiente / Finalizar: no deja ir hacia adelante sin contestar
+                    // Botón Siguiente / Finalizar: no deja ir hacia adelante sin contestar (solo activo al volver atrás)
                     Button(
                         onClick = { viewModel.avanzarSiguientePregunta() },
-                        enabled = uiState.puedeAvanzar,
+                        enabled = uiState.puedeAvanzarManualmente,
                         modifier = Modifier
                             .weight(1f)
                             .height(44.dp),
@@ -685,8 +688,9 @@ private fun OpcionCapitalCard(
 }
 
 /**
- * Componente que ajusta dinámicamente el tamaño de fuente si el texto es muy largo
- * para garantizar que siempre se mantenga en una sola línea sin desbordar ni desplazar componentes.
+ * Componente que ajusta dinámicamente el tamaño de fuente midiendo el espacio real disponible
+ * para garantizar que textos largos (como "Islas Ultramarinas Menores de los Estados Unidos")
+ * quepan siempre enteros en una sola línea sin desbordar ni cortarse.
  */
 @Composable
 fun TextoAjustable(
@@ -697,21 +701,50 @@ fun TextoAjustable(
     textAlign: TextAlign = TextAlign.Center,
     baseSize: Int = 18
 ) {
-    val fontSize = when {
-        texto.length > 28 -> (baseSize - 6).coerceAtLeast(9).sp
-        texto.length > 22 -> (baseSize - 4).coerceAtLeast(10).sp
-        texto.length > 16 -> (baseSize - 2).coerceAtLeast(11).sp
-        else -> baseSize.sp
-    }
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val maxWidthPx = constraints.maxWidth
+        val textMeasurer = rememberTextMeasurer()
 
-    Text(
-        text = texto,
-        modifier = modifier,
-        color = color,
-        fontSize = fontSize,
-        fontWeight = fontWeight,
-        textAlign = textAlign,
-        maxLines = 1,
-        softWrap = false
-    )
+        var currentSizeSp by remember(texto, maxWidthPx, baseSize, fontWeight) {
+            val initialSize = if (maxWidthPx <= 0) {
+                baseSize.toFloat()
+            } else {
+                val targetWidth = (maxWidthPx - 4).coerceAtLeast(1)
+                var size = baseSize.toFloat()
+                while (size > 5f) {
+                    val result = textMeasurer.measure(
+                        text = AnnotatedString(texto),
+                        style = TextStyle(
+                            fontSize = size.sp,
+                            fontWeight = fontWeight
+                        ),
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                    if (result.size.width <= targetWidth) {
+                        break
+                    }
+                    size -= 0.35f
+                }
+                size
+            }
+            mutableFloatStateOf(initialSize)
+        }
+
+        Text(
+            text = texto,
+            modifier = Modifier.fillMaxWidth(),
+            color = color,
+            fontSize = currentSizeSp.sp,
+            fontWeight = fontWeight,
+            textAlign = textAlign,
+            maxLines = 1,
+            softWrap = false,
+            onTextLayout = { layoutResult ->
+                if (layoutResult.hasVisualOverflow && currentSizeSp > 5f) {
+                    currentSizeSp -= 0.5f
+                }
+            }
+        )
+    }
 }

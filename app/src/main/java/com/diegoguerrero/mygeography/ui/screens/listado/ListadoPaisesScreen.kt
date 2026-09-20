@@ -46,14 +46,14 @@ private enum class CategoriaFiltro(val label: String) {
     TODOS("Todos (254)"),
     INDEPENDIENTES("Independientes (195)"),
     DEPENDIENTES("Dependientes (59)"),
+    AFRICA("África"),
+    ANTARTIDA("Antártida"),
+    ASIA("Asia"),
+    CENTROAMERICA("Centroamérica"),
     EUROPA("Europa"),
     NORTEAMERICA("Norteamérica"),
-    CENTROAMERICA("Centroamérica"),
-    SUDAMERICA("Sudamérica"),
-    ASIA("Asia"),
-    AFRICA("África"),
     OCEANIA("Oceanía"),
-    ANTARTIDA("Antártida")
+    SUDAMERICA("Sudamérica")
 }
 
 private val codigosSudamerica = setOf(
@@ -161,22 +161,15 @@ fun ListadoPaisesScreen(
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = pais.nombre,
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
+                        NombrePaisModalAutoAjustable(
+                            nombre = pais.nombre,
+                            modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(3.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = "Capital: ", color = TextMuted, fontSize = 14.sp)
-                            Text(
-                                text = pais.capital,
-                                color = PrimaryCyan,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
+                        CapitalModalAutoAjustable(
+                            capital = pais.capital,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
 
@@ -374,7 +367,8 @@ private fun TopAppBarListado(
                     text = "Listado de países",
                     color = TextPrimary,
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.offset(y = 3.dp)
                 )
                 Text(
                     text = "$totalResultados naciones encontradas",
@@ -515,7 +509,7 @@ private fun ItemPaisCard(
             BanderaImage(
                 codigo = pais.codigo,
                 modifier = Modifier
-                    .size(width = 72.dp, height = 48.dp),
+                    .size(width = 68.dp, height = 45.dp),
                 borderWidth = 0.dp,
                 elevation = 0.dp
             )
@@ -551,7 +545,7 @@ private fun ItemPaisCard(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Badges de Independencia y Continente con ancho ajustado (82dp) para que quepa "Independiente"
+            // Badges de Independencia y Continente
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(5.dp)
@@ -559,7 +553,7 @@ private fun ItemPaisCard(
                 // Badge de Independiente / Dependiente
                 Box(
                     modifier = Modifier
-                        .width(82.dp)
+                        .width(75.dp)
                         .height(24.dp)
                         .clip(RoundedCornerShape(6.dp))
                         .background(if (pais.esSoberano) SovereignBadgeBg else TerritoryBadgeBg)
@@ -583,7 +577,7 @@ private fun ItemPaisCard(
                 // Badge de Continente
                 Box(
                     modifier = Modifier
-                        .width(82.dp)
+                        .width(75.dp)
                         .height(24.dp)
                         .clip(RoundedCornerShape(6.dp))
                         .background(regionInfo.color.copy(alpha = 0.18f))
@@ -621,10 +615,11 @@ private fun NombrePaisAutoAjustable(
         val maxWidthPx = constraints.maxWidth
         val textMeasurer = rememberTextMeasurer()
 
-        val fontSize = remember(nombre, maxWidthPx) {
-            if (maxWidthPx <= 0) {
-                15.sp
+        var currentSizeSp by remember(nombre, maxWidthPx) {
+            val initialSize = if (maxWidthPx <= 0) {
+                15f
             } else {
+                val targetWidth = (maxWidthPx - 8).coerceAtLeast(1)
                 var size = 15f
                 while (size > 5f) {
                     val result = textMeasurer.measure(
@@ -636,22 +631,28 @@ private fun NombrePaisAutoAjustable(
                         maxLines = 1,
                         softWrap = false
                     )
-                    if (result.size.width <= maxWidthPx) {
+                    if (result.size.width <= targetWidth) {
                         break
                     }
-                    size -= 0.5f
+                    size -= 0.35f
                 }
-                size.sp
+                size
             }
+            mutableFloatStateOf(initialSize)
         }
 
         Text(
             text = nombre,
             color = TextPrimary,
-            fontSize = fontSize,
+            fontSize = currentSizeSp.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
-            softWrap = false
+            softWrap = false,
+            onTextLayout = { layoutResult ->
+                if (layoutResult.hasVisualOverflow && currentSizeSp > 5f) {
+                    currentSizeSp -= 0.5f
+                }
+            }
         )
     }
 }
@@ -659,7 +660,7 @@ private fun NombrePaisAutoAjustable(
 /**
  * Componente que mide el espacio disponible para la capital y reduce dinámicamente la fuente
  * utilizando un único Text con AnnotatedString para evitar saltos o recortes de texto.
- * Garantiza que capitales largas como "Sri Jayawardenepura Kotte" quepan completas.
+ * Garantiza que capitales largas como "Sri Jayawardenepura Kotte / Colombo" quepan completas sin cortarse.
  */
 @Composable
 private fun CapitalAutoAjustable(
@@ -682,10 +683,11 @@ private fun CapitalAutoAjustable(
             }
         }
 
-        val fontSize = remember(capital, maxWidthPx) {
-            if (maxWidthPx <= 0) {
-                12.sp
+        var currentSizeSp by remember(capital, maxWidthPx) {
+            val initialSize = if (maxWidthPx <= 0) {
+                12f
             } else {
+                val targetWidth = (maxWidthPx - 8).coerceAtLeast(1)
                 var size = 12f
                 while (size > 5f) {
                     val result = textMeasurer.measure(
@@ -696,20 +698,145 @@ private fun CapitalAutoAjustable(
                         maxLines = 1,
                         softWrap = false
                     )
-                    if (result.size.width <= maxWidthPx) {
+                    if (result.size.width <= targetWidth) {
                         break
                     }
-                    size -= 0.5f
+                    size -= 0.35f
                 }
-                size.sp
+                size
             }
+            mutableFloatStateOf(initialSize)
         }
 
         Text(
             text = fullAnnotated,
-            fontSize = fontSize,
+            fontSize = currentSizeSp.sp,
             maxLines = 1,
-            softWrap = false
+            softWrap = false,
+            onTextLayout = { layoutResult ->
+                if (layoutResult.hasVisualOverflow && currentSizeSp > 5f) {
+                    currentSizeSp -= 0.5f
+                }
+            }
+        )
+    }
+}
+
+/**
+ * Componente para el nombre del país en el modal de detalle, adaptando el tamaño de fuente
+ * dinámicamente para que quepa siempre en una sola línea completa sin cortarse.
+ */
+@Composable
+private fun NombrePaisModalAutoAjustable(
+    nombre: String,
+    modifier: Modifier = Modifier
+) {
+    BoxWithConstraints(modifier = modifier) {
+        val maxWidthPx = constraints.maxWidth
+        val textMeasurer = rememberTextMeasurer()
+
+        var currentSizeSp by remember(nombre, maxWidthPx) {
+            val initialSize = if (maxWidthPx <= 0) {
+                20f
+            } else {
+                val targetWidth = (maxWidthPx - 4).coerceAtLeast(1)
+                var size = 20f
+                while (size > 7f) {
+                    val result = textMeasurer.measure(
+                        text = AnnotatedString(nombre),
+                        style = TextStyle(
+                            fontSize = size.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                    if (result.size.width <= targetWidth) {
+                        break
+                    }
+                    size -= 0.35f
+                }
+                size
+            }
+            mutableFloatStateOf(initialSize)
+        }
+
+        Text(
+            text = nombre,
+            color = Color.White,
+            fontSize = currentSizeSp.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            softWrap = false,
+            onTextLayout = { layoutResult ->
+                if (layoutResult.hasVisualOverflow && currentSizeSp > 7f) {
+                    currentSizeSp -= 0.5f
+                }
+            }
+        )
+    }
+}
+
+/**
+ * Componente para la capital del país en el modal de detalle, adaptando el tamaño de fuente
+ * dinámicamente para que quepa siempre en una sola línea completa sin saltos ni recortes.
+ */
+@Composable
+private fun CapitalModalAutoAjustable(
+    capital: String,
+    modifier: Modifier = Modifier
+) {
+    BoxWithConstraints(modifier = modifier) {
+        val maxWidthPx = constraints.maxWidth
+        val textMeasurer = rememberTextMeasurer()
+        val prefix = "Capital: "
+
+        val fullAnnotated = remember(capital) {
+            buildAnnotatedString {
+                withStyle(SpanStyle(color = TextMuted, fontWeight = FontWeight.Normal)) {
+                    append(prefix)
+                }
+                withStyle(SpanStyle(color = PrimaryCyan, fontWeight = FontWeight.SemiBold)) {
+                    append(capital)
+                }
+            }
+        }
+
+        var currentSizeSp by remember(capital, maxWidthPx) {
+            val initialSize = if (maxWidthPx <= 0) {
+                14f
+            } else {
+                val targetWidth = (maxWidthPx - 4).coerceAtLeast(1)
+                var size = 14f
+                while (size > 6f) {
+                    val result = textMeasurer.measure(
+                        text = fullAnnotated,
+                        style = TextStyle(
+                            fontSize = size.sp
+                        ),
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                    if (result.size.width <= targetWidth) {
+                        break
+                    }
+                    size -= 0.3f
+                }
+                size
+            }
+            mutableFloatStateOf(initialSize)
+        }
+
+        Text(
+            text = fullAnnotated,
+            fontSize = currentSizeSp.sp,
+            maxLines = 1,
+            softWrap = false,
+            onTextLayout = { layoutResult ->
+                if (layoutResult.hasVisualOverflow && currentSizeSp > 6f) {
+                    currentSizeSp -= 0.5f
+                }
+            }
         )
     }
 }
