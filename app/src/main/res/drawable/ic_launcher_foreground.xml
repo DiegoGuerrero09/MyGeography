@@ -1,0 +1,63 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="1024"
+    android:viewportHeight="1024">
+
+    <!-- Círculo exterior del Globo Terráqueo -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="32"
+        android:strokeLineCap="round"
+        android:pathData="M 512,232 a 280,280 0 1,0 0,560 a 280,280 0 1,0 0,-560" />
+
+    <!-- Ecuador -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="24"
+        android:strokeLineCap="round"
+        android:pathData="M 232,512 L 792,512" />
+
+    <!-- Paralelo Norte -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="20"
+        android:strokeLineCap="round"
+        android:pathData="M 292,372 C 380,412 644,412 732,372" />
+
+    <!-- Paralelo Sur -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="20"
+        android:strokeLineCap="round"
+        android:pathData="M 292,652 C 380,612 644,612 732,652" />
+
+    <!-- Meridiano Central -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="24"
+        android:strokeLineCap="round"
+        android:pathData="M 512,232 L 512,792" />
+
+    <!-- Meridiano Curvo Oeste -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="20"
+        android:strokeLineCap="round"
+        android:pathData="M 512,232 C 372,320 372,704 512,792" />
+
+    <!-- Meridiano Curvo Este -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="20"
+        android:strokeLineCap="round"
+        android:pathData="M 512,232 C 652,320 652,704 512,792" />
+
+</vector>
