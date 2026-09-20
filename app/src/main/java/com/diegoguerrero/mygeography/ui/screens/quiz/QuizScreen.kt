@@ -9,8 +9,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
@@ -155,7 +157,72 @@ fun QuizScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(2.dp))
+                // Barra de navegación inferior: Anterior / Siguiente (o Finalizar)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 2.dp, bottom = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Botón Anterior: deshabilitado en la primera pregunta
+                    OutlinedButton(
+                        onClick = { viewModel.retrocederPregunta() },
+                        enabled = uiState.puedeRetroceder,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color.White,
+                            disabledContentColor = TextMuted
+                        ),
+                        border = BorderStroke(
+                            1.2.dp,
+                            if (uiState.puedeRetroceder) PrimaryBlue.copy(alpha = 0.8f) else DarkCardBorder
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Anterior",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    // Botón Siguiente / Finalizar: no deja ir hacia adelante sin contestar
+                    Button(
+                        onClick = { viewModel.avanzarSiguientePregunta() },
+                        enabled = uiState.puedeAvanzar,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (uiState.esUltimaPregunta) CorrectGreen else PrimaryBlue,
+                            disabledContainerColor = Color(0xFF1E293B),
+                            contentColor = Color.White,
+                            disabledContentColor = TextMuted
+                        )
+                    ) {
+                        Text(
+                            text = if (uiState.esUltimaPregunta) "Finalizar" else "Siguiente",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            imageVector = if (uiState.esUltimaPregunta) Icons.Default.Check else Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
             }
         }
     }

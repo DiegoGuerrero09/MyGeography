@@ -39,26 +39,26 @@ import com.diegoguerrero.mygeography.ui.theme.*
 
 @Composable
 fun MenuScreen(
-    onIniciarQuizBanderas: (RegionQuiz) -> Unit,
-    onIniciarQuizCapitales: (RegionQuiz) -> Unit,
+    onIniciarQuizBanderas: (RegionQuiz, Boolean) -> Unit,
+    onIniciarQuizCapitales: (RegionQuiz, Boolean) -> Unit,
     onAbrirListado: () -> Unit,
     onAbrirGlobo: () -> Unit
 ) {
     val context = LocalContext.current
     val statsManager = remember { EstadisticasManager(context) }
 
-    // Diálogo para seleccionar ámbito (Global o por Continente)
+    // Diálogo para seleccionar ámbito (Global o por Continente) y países dependientes
     var tipoQuizSeleccionadoParaDialogo by remember { mutableStateOf<TipoQuiz?>(null) }
 
     tipoQuizSeleccionadoParaDialogo?.let { tipo ->
         DialogoSeleccionRegion(
             tipoQuiz = tipo,
-            onSeleccionarRegion = { region ->
+            onSeleccionarRegion = { region, incluirDependientes ->
                 tipoQuizSeleccionadoParaDialogo = null
                 if (tipo == TipoQuiz.BANDERAS) {
-                    onIniciarQuizBanderas(region)
+                    onIniciarQuizBanderas(region, incluirDependientes)
                 } else {
-                    onIniciarQuizCapitales(region)
+                    onIniciarQuizCapitales(region, incluirDependientes)
                 }
             },
             onDismiss = { tipoQuizSeleccionadoParaDialogo = null }
@@ -73,40 +73,45 @@ fun MenuScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // Cabecera Principal: Título centrado horizontalmente en la pantalla y botón de Globo Terráqueo arriba a la derecha
-        Box(
+        // Cabecera Principal: Título centrado exactamente entre el borde izquierdo y el botón del Globo 3D
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp)
+                .padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Título e Icono centrados horizontalmente en toda la pantalla
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.align(Alignment.Center)
+            // Contenedor centrado entre el borde izquierdo y el botón
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(PrimaryBlue.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Public,
-                        contentDescription = null,
-                        tint = PrimaryBlue,
-                        modifier = Modifier.size(26.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(PrimaryBlue.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Public,
+                            contentDescription = null,
+                            tint = PrimaryBlue,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "MyGeography",
+                        color = Color.White,
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.5.sp
                     )
                 }
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = "MyGeography",
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 0.5.sp
-                )
             }
 
             // Botón interactivo de acceso al Globo Terráqueo 3D arriba a la derecha
@@ -115,34 +120,33 @@ fun MenuScreen(
                 shape = RoundedCornerShape(12.dp),
                 color = DarkCard,
                 border = androidx.compose.foundation.BorderStroke(1.2.dp, PrimaryCyan.copy(alpha = 0.8f)),
-                shadowElevation = 4.dp,
-                modifier = Modifier.align(Alignment.CenterEnd)
+                shadowElevation = 4.dp
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.TravelExplore,
                         contentDescription = "Globo terráqueo",
                         tint = PrimaryCyan,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(19.dp)
                     )
-                    Spacer(modifier = Modifier.width(5.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "Globo 3D",
                         color = Color.White,
-                        fontSize = 12.sp,
+                        fontSize = 13.5.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
         }
 
-        // Botón Grande 1: Banderas (254 Territorios) - Expandido
+        // Botón Grande 1: Banderas (254 Países) - Expandido
         BotonModoPrincipal(
             titulo = "Test de banderas",
-            subtitulo = "254 TERRITORIOS",
+            subtitulo = "254 PAÍSES",
             descripcion = "Elige la bandera correcta.",
             icono = Icons.Default.Flag,
             colorGradienteInicio = Color(0xFF0284C7),
@@ -154,10 +158,10 @@ fun MenuScreen(
                 .weight(1f)
         )
 
-        // Botón Grande 2: Capitales (254 Territorios) - Expandido
+        // Botón Grande 2: Capitales (254 Países) - Expandido
         BotonModoPrincipal(
             titulo = "Test de capitales",
-            subtitulo = "254 TERRITORIOS",
+            subtitulo = "254 PAÍSES",
             descripcion = "Acierta la capital oficial.",
             icono = Icons.Default.LocationCity,
             colorGradienteInicio = Color(0xFFD97706),
@@ -248,7 +252,7 @@ private fun BotonModoPrincipal(
                         Text(
                             text = subtitulo,
                             color = Color.White,
-                            fontSize = 13.5.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp
                         )
@@ -275,14 +279,14 @@ private fun BotonModoPrincipal(
                     Text(
                         text = titulo,
                         color = TextPrimary,
-                        fontSize = 23.sp,
+                        fontSize = 25.sp,
                         fontWeight = FontWeight.ExtraBold
                     )
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(
                         text = descripcion,
                         color = TextSecondary,
-                        fontSize = 15.sp
+                        fontSize = 16.5.sp
                     )
                 }
             }
@@ -345,7 +349,7 @@ private fun BotonListadoPaises(
                         Text(
                             text = "LISTADO",
                             color = Color.White,
-                            fontSize = 13.5.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp
                         )
@@ -372,14 +376,14 @@ private fun BotonListadoPaises(
                     Text(
                         text = "Listado de países",
                         color = TextPrimary,
-                        fontSize = 23.sp,
+                        fontSize = 25.sp,
                         fontWeight = FontWeight.ExtraBold
                     )
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(
                         text = "País • Capital • Bandera",
                         color = TextSecondary,
-                        fontSize = 15.sp
+                        fontSize = 16.5.sp
                     )
                 }
             }
@@ -444,7 +448,7 @@ private fun CardEstadisticasConRegiones(
                         Text(
                             text = "PUNTUACIONES",
                             color = Color.White,
-                            fontSize = 13.5.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp
                         )
@@ -489,12 +493,12 @@ private fun CardEstadisticasConRegiones(
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(if (esActiva) colorFondoActivo else Color(0xFF1E293B))
                                 .clickable { regionSeleccionada = region }
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .padding(horizontal = 9.dp, vertical = 5.dp)
                         ) {
                             Text(
                                 text = region.abreviatura,
                                 color = if (esActiva) Color.White else TextSecondary,
-                                fontSize = 11.sp,
+                                fontSize = 12.sp,
                                 fontWeight = if (esActiva) FontWeight.Bold else FontWeight.Normal,
                                 maxLines = 1
                             )
@@ -519,13 +523,13 @@ private fun CardEstadisticasConRegiones(
                         Text(
                             text = "Banderas",
                             color = TextSecondary,
-                            fontSize = 14.5.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
                         )
                         Text(
                             text = if (mejorBanderas >= 0) "$mejorBanderas%" else "-",
                             color = if (mejorBanderas >= 0) PrimaryBlue else TextMuted,
-                            fontSize = 17.5.sp,
+                            fontSize = 19.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
@@ -543,13 +547,13 @@ private fun CardEstadisticasConRegiones(
                         Text(
                             text = "Capitales",
                             color = TextSecondary,
-                            fontSize = 14.5.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
                         )
                         Text(
                             text = if (mejorCapitales >= 0) "$mejorCapitales%" else "-",
                             color = if (mejorCapitales >= 0) AccentGold else TextMuted,
-                            fontSize = 17.5.sp,
+                            fontSize = 19.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
@@ -560,16 +564,21 @@ private fun CardEstadisticasConRegiones(
 }
 
 /**
- * Diálogo modal para elegir ámbito al iniciar un test.
- * Sin texto secundario "Selecciona el ámbito del test".
+ * Diálogo modal para elegir ámbito al iniciar un test con checkbox para añadir países dependientes.
+ * Opciones ordenadas alfabéticamente (Global primero, continentes en orden alfabético).
  */
 @Composable
 private fun DialogoSeleccionRegion(
     tipoQuiz: TipoQuiz,
-    onSeleccionarRegion: (RegionQuiz) -> Unit,
+    onSeleccionarRegion: (RegionQuiz, Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
     val tituloModo = if (tipoQuiz == TipoQuiz.BANDERAS) "Test de banderas" else "Test de capitales"
+    val regionesOrdenadas = remember {
+        listOf(RegionQuiz.GLOBAL) + RegionQuiz.values().filter { it != RegionQuiz.GLOBAL }.sortedBy { it.nombre }
+    }
+    // Checkbox activada en sí (true) por defecto
+    var incluirDependientes by remember { mutableStateOf(true) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -579,7 +588,7 @@ private fun DialogoSeleccionRegion(
             Text(
                 text = tituloModo,
                 color = TextPrimary,
-                fontSize = 18.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
         },
@@ -588,9 +597,63 @@ private fun DialogoSeleccionRegion(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                RegionQuiz.values().forEach { region ->
+                // Checkbox para añadir Países dependientes o no, activada en sí por defecto
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF0F172A))
+                        .border(
+                            1.dp,
+                            if (incluirDependientes) PrimaryBlue.copy(alpha = 0.5f) else DarkCardBorder,
+                            RoundedCornerShape(12.dp)
+                        )
+                        .clickable { incluirDependientes = !incluirDependientes }
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Añadir países dependientes",
+                            color = TextPrimary,
+                            fontSize = 14.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = if (incluirDependientes) "195 independientes + 59 dependientes (254)" else "Solo 195 países independientes",
+                            color = if (incluirDependientes) PrimaryCyan else TextSecondary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Checkbox(
+                        checked = incluirDependientes,
+                        onCheckedChange = { incluirDependientes = it },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = PrimaryBlue,
+                            uncheckedColor = TextSecondary,
+                            checkmarkColor = Color.White
+                        )
+                    )
+                }
+
+                HorizontalDivider(
+                    color = DarkCardBorder,
+                    modifier = Modifier.padding(vertical = 2.dp)
+                )
+
+                Text(
+                    text = "Selecciona el ámbito geográfico:",
+                    color = TextSecondary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
+
+                regionesOrdenadas.forEach { region ->
                     val colorAcento = when (region) {
                         RegionQuiz.GLOBAL -> Color(0xFF94A3B8) // Gris para Global
                         RegionQuiz.EUROPA -> Color(0xFF38BDF8)
@@ -606,28 +669,28 @@ private fun DialogoSeleccionRegion(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
                             .border(1.dp, colorAcento.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
-                            .clickable { onSeleccionarRegion(region) },
+                            .clickable { onSeleccionarRegion(region, incluirDependientes) },
                         colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 11.dp),
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
                                 text = region.nombre,
                                 color = TextPrimary,
-                                fontSize = 14.sp,
+                                fontSize = 15.5.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Icon(
                                 imageVector = Icons.Default.ChevronRight,
                                 contentDescription = null,
                                 tint = colorAcento,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
@@ -636,7 +699,7 @@ private fun DialogoSeleccionRegion(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancelar", color = TextSecondary)
+                Text("Cancelar", color = TextSecondary, fontSize = 15.sp)
             }
         }
     )

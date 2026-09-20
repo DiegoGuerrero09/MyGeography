@@ -69,12 +69,12 @@ fun MainAppNavigation(quizViewModel: QuizViewModel) {
     ) {
         composable(Screen.Menu.route) {
             MenuScreen(
-                onIniciarQuizBanderas = { region ->
-                    quizViewModel.iniciarQuiz(TipoQuiz.BANDERAS, region)
+                onIniciarQuizBanderas = { region, incluirDependientes ->
+                    quizViewModel.iniciarQuiz(TipoQuiz.BANDERAS, region, incluirDependientes)
                     navController.navigate(Screen.Quiz.route)
                 },
-                onIniciarQuizCapitales = { region ->
-                    quizViewModel.iniciarQuiz(TipoQuiz.CAPITALES, region)
+                onIniciarQuizCapitales = { region, incluirDependientes ->
+                    quizViewModel.iniciarQuiz(TipoQuiz.CAPITALES, region, incluirDependientes)
                     navController.navigate(Screen.Quiz.route)
                 },
                 onAbrirListado = {

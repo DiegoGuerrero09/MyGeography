@@ -40,19 +40,49 @@ class PaisesRepository {
         return paises.filter { perteneceARegion(it, region) }
     }
 
+    private val gruposBanderasConfusas: List<Set<String>> = listOf(
+        setOf("no", "sj", "bv"), // Noruega, Svalbard y Jan Mayen, Isla Bouvet
+        setOf("td", "ro"),       // Chad, Rumania
+        setOf("mc", "id"),       // Mónaco, Indonesia
+        setOf("us", "um"),       // Estados Unidos, Islas Ultramarinas Menores de EE.UU.
+        setOf("fr", "mf"),       // Francia, San Martín (Francia)
+        setOf("ie", "ci"),       // Irlanda, Costa de Marfil
+        setOf("lu", "nl")        // Luxemburgo, Países Bajos
+    )
+
+    private fun sonBanderasConfusas(codigoA: String, codigoB: String): Boolean {
+        if (codigoA == codigoB) return true
+        return gruposBanderasConfusas.any { grupo ->
+            codigoA in grupo && codigoB in grupo
+        }
+    }
+
+    fun obtenerIndependientes(): List<Pais> = PaisesData.listaPaises.filter { it.esSoberano }
+
     /**
-     * Genera el Test de Banderas (por región o global)
-     * 12 opciones (1 correcta + 11 distractores globales) en cuadrícula 6x2
+     * Genera el Test de Banderas (por región o global).
+     * @param region Región geográfica seleccionada o GLOBAL.
+     * @param incluirDependientes Si es true, incluye los 59 países dependientes además de los 195 independientes.
      */
-    fun generarQuizBanderas(region: RegionQuiz = RegionQuiz.GLOBAL): List<QuizPregunta> {
-        val universoGlobal = obtenerTodos()
-        val preguntasBarajadas = filtrarPorRegion(universoGlobal, region).shuffled()
+    fun generarQuizBanderas(
+        region: RegionQuiz = RegionQuiz.GLOBAL,
+        incluirDependientes: Boolean = true
+    ): List<QuizPregunta> {
+        val universo = if (incluirDependientes) obtenerTodos() else obtenerIndependientes()
+        val preguntasBarajadas = filtrarPorRegion(universo, region).shuffled()
 
         return preguntasBarajadas.mapIndexed { index, paisCorrecto ->
-            val distractores = universoGlobal
-                .filter { it.codigo != paisCorrecto.codigo }
+            val distractores = mutableListOf<Pais>()
+            val candidatos = universo
+                .filter { it.codigo != paisCorrecto.codigo && !sonBanderasConfusas(it.codigo, paisCorrecto.codigo) }
                 .shuffled()
-                .take(11)
+
+            for (candidato in candidatos) {
+                if (distractores.none { sonBanderasConfusas(it.codigo, candidato.codigo) }) {
+                    distractores.add(candidato)
+                    if (distractores.size == 11) break
+                }
+            }
 
             val opciones = (distractores + paisCorrecto).shuffled()
 
@@ -69,16 +99,19 @@ class PaisesRepository {
     }
 
     /**
-     * Genera el Test de Capitales (por región o global)
-     * Incluye todas las naciones y territorios (254 territorios o por región)
-     * 12 opciones (1 correcta + 11 distractores globales únicos) ordenadas alfabéticamente en español
+     * Genera el Test de Capitales (por región o global).
+     * @param region Región geográfica seleccionada o GLOBAL.
+     * @param incluirDependientes Si es true, incluye países dependientes.
      */
-    fun generarQuizCapitales(region: RegionQuiz = RegionQuiz.GLOBAL): List<QuizPregunta> {
-        val universoGlobal = obtenerTodos()
-        val preguntasBarajadas = filtrarPorRegion(universoGlobal, region).shuffled()
+    fun generarQuizCapitales(
+        region: RegionQuiz = RegionQuiz.GLOBAL,
+        incluirDependientes: Boolean = true
+    ): List<QuizPregunta> {
+        val universo = if (incluirDependientes) obtenerTodos() else obtenerIndependientes()
+        val preguntasBarajadas = filtrarPorRegion(universo, region).shuffled()
 
         return preguntasBarajadas.mapIndexed { index, paisCorrecto ->
-            val distractores = universoGlobal
+            val distractores = universo
                 .filter { it.codigo != paisCorrecto.codigo && it.capital != paisCorrecto.capital }
                 .distinctBy { it.capital }
                 .shuffled()

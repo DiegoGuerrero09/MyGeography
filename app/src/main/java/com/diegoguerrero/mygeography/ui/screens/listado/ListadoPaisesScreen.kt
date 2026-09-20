@@ -1,5 +1,8 @@
 package com.diegoguerrero.mygeography.ui.screens.listado
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -9,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -17,13 +21,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.diegoguerrero.mygeography.data.datasource.CoordenadasPaises
 import com.diegoguerrero.mygeography.data.datasource.PaisesData
 import com.diegoguerrero.mygeography.data.model.Continente
 import com.diegoguerrero.mygeography.data.model.Pais
@@ -31,11 +40,12 @@ import com.diegoguerrero.mygeography.ui.components.BanderaImage
 import com.diegoguerrero.mygeography.ui.theme.*
 import java.text.Collator
 import java.util.Locale
+import kotlin.math.abs
 
 private enum class CategoriaFiltro(val label: String) {
     TODOS("Todos (254)"),
-    SOBERANOS("Soberanos (195)"),
-    TERRITORIOS("Territorios (59)"),
+    INDEPENDIENTES("Independientes (195)"),
+    DEPENDIENTES("Dependientes (59)"),
     EUROPA("Europa"),
     NORTEAMERICA("Norteamérica"),
     CENTROAMERICA("Centroamérica"),
@@ -74,12 +84,14 @@ fun obtenerRegionBadgeInfo(pais: Pais): RegionBadgeInfo {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListadoPaisesScreen(
     onVolverAlMenu: () -> Unit
 ) {
     var textoBusqueda by remember { mutableStateOf("") }
     var filtroSeleccionado by remember { mutableStateOf(CategoriaFiltro.TODOS) }
+    var paisSeleccionadoParaModal by remember { mutableStateOf<Pais?>(null) }
 
     val todosLosPaises = remember { PaisesData.listaPaises }
     val collatorEspanol = remember {
@@ -92,8 +104,8 @@ fun ListadoPaisesScreen(
         todosLosPaises.filter { pais ->
             val coincideFiltro = when (filtroSeleccionado) {
                 CategoriaFiltro.TODOS -> true
-                CategoriaFiltro.SOBERANOS -> pais.esSoberano
-                CategoriaFiltro.TERRITORIOS -> !pais.esSoberano
+                CategoriaFiltro.INDEPENDIENTES -> pais.esSoberano
+                CategoriaFiltro.DEPENDIENTES -> !pais.esSoberano
                 CategoriaFiltro.EUROPA -> pais.continente == Continente.EUROPA
                 CategoriaFiltro.NORTEAMERICA -> pais.codigo in codigosNorteamerica
                 CategoriaFiltro.CENTROAMERICA -> pais.continente == Continente.AMERICA && pais.codigo !in codigosNorteamerica && pais.codigo !in codigosSudamerica
@@ -114,6 +126,166 @@ fun ListadoPaisesScreen(
 
             coincideFiltro && coincideBusqueda
         }.sortedWith(compareBy(collatorEspanol) { it.nombre })
+    }
+
+    // Modal inferior con detalle completo del país y botón a Wikipedia al pulsar en la lista
+    if (paisSeleccionadoParaModal != null) {
+        val pais = paisSeleccionadoParaModal!!
+        val context = LocalContext.current
+        val regionInfo = remember(pais) { obtenerRegionBadgeInfo(pais) }
+        val coords = remember(pais) { CoordenadasPaises.obtener(pais.codigo) }
+        val wikiUrl = remember(pais.nombre) {
+            "https://es.wikipedia.org/wiki/${Uri.encode(pais.nombre.replace(" ", "_"))}"
+        }
+
+        ModalBottomSheet(
+            onDismissRequest = { paisSeleccionadoParaModal = null },
+            containerColor = DarkCard,
+            dragHandle = { BottomSheetDefaults.DragHandle(color = TextMuted) },
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    BanderaImage(
+                        codigo = pais.codigo,
+                        modifier = Modifier.size(width = 80.dp, height = 54.dp),
+                        borderWidth = 0.dp,
+                        elevation = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = pais.nombre,
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "Capital: ", color = TextMuted, fontSize = 14.sp)
+                            Text(
+                                text = pais.capital,
+                                color = PrimaryCyan,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Estado de dependencia si es dependiente
+                if (!pais.esSoberano && !pais.estadoSoberano.isNullOrBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF332005))
+                            .border(1.dp, Color(0xFFF59E0B).copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "País dependiente • Pertenece a: ${pais.estadoSoberano}",
+                            color = Color(0xFFFBBF24),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                // Badges y Coordenadas con 4 decimales
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(regionInfo.color.copy(alpha = 0.18f))
+                                .border(1.dp, regionInfo.color.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = regionInfo.nombre,
+                                color = regionInfo.color,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (pais.esSoberano) SovereignBadgeBg else TerritoryBadgeBg)
+                                .border(
+                                    1.dp,
+                                    if (pais.esSoberano) SovereignBadgeBorder else TerritoryBadgeBorder,
+                                    RoundedCornerShape(6.dp)
+                                )
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = if (pais.esSoberano) "Independiente" else "Dependiente",
+                                color = if (pais.esSoberano) SovereignBadgeText else TerritoryBadgeText,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    if (coords != null) {
+                        val latStr = String.format(Locale.US, "%.4f°%s", abs(coords.first), if (coords.first >= 0) "N" else "S")
+                        val lonStr = String.format(Locale.US, "%.4f°%s", abs(coords.second), if (coords.second >= 0) "E" else "O")
+                        Text(
+                            text = "$latStr, $lonStr",
+                            color = TextMuted,
+                            fontSize = 12.sp,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // Botón Wikipedia
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(wikiUrl))
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Wikipedia",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
     }
 
     Scaffold(
@@ -178,7 +350,10 @@ fun ListadoPaisesScreen(
                         items = paisesFiltrados,
                         key = { it.codigo }
                     ) { pais ->
-                        ItemPaisCard(pais = pais)
+                        ItemPaisCard(
+                            pais = pais,
+                            onClick = { paisSeleccionadoParaModal = pais }
+                        )
                     }
                 }
             }
@@ -314,14 +489,19 @@ private fun FilaFiltros(
 }
 
 @Composable
-private fun ItemPaisCard(pais: Pais) {
+private fun ItemPaisCard(
+    pais: Pais,
+    onClick: () -> Unit
+) {
     val shape = RoundedCornerShape(14.dp)
     val regionInfo = remember(pais) { obtenerRegionBadgeInfo(pais) }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, DarkCardBorder, shape),
+            .clip(shape)
+            .border(1.dp, DarkCardBorder, shape)
+            .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = DarkCard),
         shape = shape
     ) {
@@ -335,14 +515,14 @@ private fun ItemPaisCard(pais: Pais) {
             BanderaImage(
                 codigo = pais.codigo,
                 modifier = Modifier
-                    .size(width = 78.dp, height = 52.dp),
+                    .size(width = 72.dp, height = 48.dp),
                 borderWidth = 0.dp,
                 elevation = 0.dp
             )
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
-            // Nombre y Capital
+            // Nombre, Capital y Soberanía si es territorio
             Column(modifier = Modifier.weight(1f)) {
                 NombrePaisAutoAjustable(
                     nombre = pais.nombre,
@@ -355,19 +535,31 @@ private fun ItemPaisCard(pais: Pais) {
                     capital = pais.capital,
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                if (!pais.esSoberano && !pais.estadoSoberano.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Dependiente de: ${pais.estadoSoberano}",
+                        color = Color(0xFFFBBF24),
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Badges de Soberanía y Continente con el mismo tamaño y reborde
+            // Badges de Independencia y Continente con ancho ajustado (82dp) para que quepa "Independiente"
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                // Badge de Soberano / Territorio (mismo tamaño, con reborde y color propio)
+                // Badge de Independiente / Dependiente
                 Box(
                     modifier = Modifier
-                        .width(92.dp)
+                        .width(82.dp)
                         .height(24.dp)
                         .clip(RoundedCornerShape(6.dp))
                         .background(if (pais.esSoberano) SovereignBadgeBg else TerritoryBadgeBg)
@@ -379,19 +571,19 @@ private fun ItemPaisCard(pais: Pais) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (pais.esSoberano) "Soberano" else "Territorio",
+                        text = if (pais.esSoberano) "Independiente" else "Dependiente",
                         color = if (pais.esSoberano) SovereignBadgeText else TerritoryBadgeText,
-                        fontSize = 9.5.sp,
+                        fontSize = 8.5.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         textAlign = TextAlign.Center
                     )
                 }
 
-                // Badge de Continente (mismo tamaño y coloreado por región)
+                // Badge de Continente
                 Box(
                     modifier = Modifier
-                        .width(92.dp)
+                        .width(82.dp)
                         .height(24.dp)
                         .clip(RoundedCornerShape(6.dp))
                         .background(regionInfo.color.copy(alpha = 0.18f))
@@ -405,7 +597,7 @@ private fun ItemPaisCard(pais: Pais) {
                     Text(
                         text = regionInfo.nombre,
                         color = regionInfo.color,
-                        fontSize = 9.5.sp,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         textAlign = TextAlign.Center
@@ -466,7 +658,8 @@ private fun NombrePaisAutoAjustable(
 
 /**
  * Componente que mide el espacio disponible para la capital y reduce dinámicamente la fuente
- * para que la capital quepa completa en una sola línea sin cortarse jamás.
+ * utilizando un único Text con AnnotatedString para evitar saltos o recortes de texto.
+ * Garantiza que capitales largas como "Sri Jayawardenepura Kotte" quepan completas.
  */
 @Composable
 private fun CapitalAutoAjustable(
@@ -478,18 +671,27 @@ private fun CapitalAutoAjustable(
         val textMeasurer = rememberTextMeasurer()
         val prefix = "Capital: "
 
+        val fullAnnotated = remember(capital) {
+            buildAnnotatedString {
+                withStyle(SpanStyle(color = TextMuted, fontWeight = FontWeight.Normal)) {
+                    append(prefix)
+                }
+                withStyle(SpanStyle(color = PrimaryCyan, fontWeight = FontWeight.SemiBold)) {
+                    append(capital)
+                }
+            }
+        }
+
         val fontSize = remember(capital, maxWidthPx) {
             if (maxWidthPx <= 0) {
                 12.sp
             } else {
                 var size = 12f
                 while (size > 5f) {
-                    val fullText = "$prefix$capital"
                     val result = textMeasurer.measure(
-                        text = AnnotatedString(fullText),
+                        text = fullAnnotated,
                         style = TextStyle(
-                            fontSize = size.sp,
-                            fontWeight = FontWeight.SemiBold
+                            fontSize = size.sp
                         ),
                         maxLines = 1,
                         softWrap = false
@@ -503,25 +705,11 @@ private fun CapitalAutoAjustable(
             }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = prefix,
-                color = TextMuted,
-                fontSize = fontSize,
-                maxLines = 1,
-                softWrap = false
-            )
-            Text(
-                text = capital,
-                color = PrimaryCyan,
-                fontSize = fontSize,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                softWrap = false
-            )
-        }
+        Text(
+            text = fullAnnotated,
+            fontSize = fontSize,
+            maxLines = 1,
+            softWrap = false
+        )
     }
 }

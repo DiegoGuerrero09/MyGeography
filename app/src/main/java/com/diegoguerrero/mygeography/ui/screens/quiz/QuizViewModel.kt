@@ -19,17 +19,42 @@ import kotlinx.coroutines.launch
 data class QuizUiState(
     val tipoQuiz: TipoQuiz = TipoQuiz.BANDERAS,
     val region: RegionQuiz = RegionQuiz.GLOBAL,
+    val incluirDependientes: Boolean = true,
     val preguntas: List<QuizPregunta> = emptyList(),
     val indiceActual: Int = 0,
-    val opcionSeleccionada: Pais? = null,
-    val esRespuestaCorrecta: Boolean? = null,
-    val estaEvaluando: Boolean = false,
-    val respuestas: List<RespuestaQuiz> = emptyList(),
+    val respuestasPorIndice: Map<Int, RespuestaQuiz> = emptyMap(),
     val quizTerminado: Boolean = false,
     val mostrarDialogoSalir: Boolean = false
 ) {
     val preguntaActual: QuizPregunta?
         get() = preguntas.getOrNull(indiceActual)
+
+    val respuestaActual: RespuestaQuiz?
+        get() = respuestasPorIndice[indiceActual]
+
+    val estaContestada: Boolean
+        get() = respuestaActual != null
+
+    val opcionSeleccionada: Pais?
+        get() = respuestaActual?.opcionSeleccionada
+
+    val esRespuestaCorrecta: Boolean?
+        get() = respuestaActual?.esCorrecta
+
+    val estaEvaluando: Boolean
+        get() = estaContestada
+
+    val puedeAvanzar: Boolean
+        get() = estaContestada
+
+    val puedeRetroceder: Boolean
+        get() = indiceActual > 0
+
+    val esUltimaPregunta: Boolean
+        get() = totalPreguntas > 0 && indiceActual == totalPreguntas - 1
+
+    val respuestas: List<RespuestaQuiz>
+        get() = respuestasPorIndice.values.toList()
 
     val aciertos: Int
         get() = respuestas.count { it.esCorrecta }
@@ -51,24 +76,23 @@ class QuizViewModel(
     private val _uiState = MutableStateFlow(QuizUiState())
     val uiState: StateFlow<QuizUiState> = _uiState.asStateFlow()
 
-    private var autoAvanzarJob: Job? = null
-
-    fun iniciarQuiz(tipo: TipoQuiz, region: RegionQuiz = RegionQuiz.GLOBAL) {
-        autoAvanzarJob?.cancel()
+    fun iniciarQuiz(
+        tipo: TipoQuiz,
+        region: RegionQuiz = RegionQuiz.GLOBAL,
+        incluirDependientes: Boolean = true
+    ) {
         val preguntas = when (tipo) {
-            TipoQuiz.BANDERAS -> repository.generarQuizBanderas(region)
-            TipoQuiz.CAPITALES -> repository.generarQuizCapitales(region)
+            TipoQuiz.BANDERAS -> repository.generarQuizBanderas(region, incluirDependientes)
+            TipoQuiz.CAPITALES -> repository.generarQuizCapitales(region, incluirDependientes)
         }
 
         _uiState.value = QuizUiState(
             tipoQuiz = tipo,
             region = region,
+            incluirDependientes = incluirDependientes,
             preguntas = preguntas,
             indiceActual = 0,
-            opcionSeleccionada = null,
-            esRespuestaCorrecta = null,
-            estaEvaluando = false,
-            respuestas = emptyList(),
+            respuestasPorIndice = emptyMap(),
             quizTerminado = false,
             mostrarDialogoSalir = false
         )
@@ -76,7 +100,8 @@ class QuizViewModel(
 
     fun seleccionarOpcion(opcion: Pais) {
         val currentState = _uiState.value
-        if (currentState.estaEvaluando || currentState.quizTerminado) return
+        // Si ya está contestada la pregunta o terminó el quiz, no permitir cambiar la respuesta
+        if (currentState.estaContestada || currentState.quizTerminado) return
 
         val preguntaActual = currentState.preguntaActual ?: return
         val esCorrecta = opcion.codigo == preguntaActual.paisCorrecto.codigo
@@ -87,44 +112,28 @@ class QuizViewModel(
             esCorrecta = esCorrecta
         )
 
-        val nuevasRespuestas = currentState.respuestas + nuevaRespuesta
-
         _uiState.update {
             it.copy(
-                opcionSeleccionada = opcion,
-                esRespuestaCorrecta = esCorrecta,
-                estaEvaluando = true,
-                respuestas = nuevasRespuestas
+                respuestasPorIndice = it.respuestasPorIndice + (it.indiceActual to nuevaRespuesta)
             )
         }
+    }
 
-        autoAvanzarJob = viewModelScope.launch {
-            delay(1100)
-            avanzarSiguientePregunta()
+    fun retrocederPregunta() {
+        val currentState = _uiState.value
+        if (currentState.puedeRetroceder) {
+            _uiState.update { it.copy(indiceActual = it.indiceActual - 1) }
         }
     }
 
     fun avanzarSiguientePregunta() {
-        autoAvanzarJob?.cancel()
         val currentState = _uiState.value
-        if (!currentState.estaEvaluando) return
+        if (!currentState.puedeAvanzar) return
 
-        if (currentState.indiceActual + 1 < currentState.totalPreguntas) {
-            _uiState.update {
-                it.copy(
-                    indiceActual = it.indiceActual + 1,
-                    opcionSeleccionada = null,
-                    esRespuestaCorrecta = null,
-                    estaEvaluando = false
-                )
-            }
+        if (currentState.esUltimaPregunta) {
+            _uiState.update { it.copy(quizTerminado = true) }
         } else {
-            _uiState.update {
-                it.copy(
-                    estaEvaluando = false,
-                    quizTerminado = true
-                )
-            }
+            _uiState.update { it.copy(indiceActual = it.indiceActual + 1) }
         }
     }
 

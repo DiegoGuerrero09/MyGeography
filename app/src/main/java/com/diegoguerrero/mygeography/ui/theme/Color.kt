@@ -31,3 +31,10 @@ val SovereignBadgeBorder = Color(0xFFEAB308)
 val TerritoryBadgeBg = Color(0xFF1E293B)
 val TerritoryBadgeText = Color(0xFFCBD5E1)
 val TerritoryBadgeBorder = Color(0xFF475569)
+
+val IndependentBadgeBg = SovereignBadgeBg
+val IndependentBadgeText = SovereignBadgeText
+val IndependentBadgeBorder = SovereignBadgeBorder
+val DependentBadgeBg = TerritoryBadgeBg
+val DependentBadgeText = TerritoryBadgeText
+val DependentBadgeBorder = TerritoryBadgeBorder

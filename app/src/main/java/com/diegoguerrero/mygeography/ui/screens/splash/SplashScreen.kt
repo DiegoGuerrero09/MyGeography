@@ -97,7 +97,7 @@ fun SplashScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Banderas • Capitales • Atlas Mundial",
+                text = "Banderas • Capitales • Atlas mundial",
                 color = PrimaryBlue.copy(alpha = 0.85f),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
