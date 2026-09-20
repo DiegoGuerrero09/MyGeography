@@ -1,7 +1,6 @@
 package com.diegoguerrero.mygeography.ui.screens.quiz
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -11,8 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
@@ -21,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -29,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.diegoguerrero.mygeography.data.model.Pais
 import com.diegoguerrero.mygeography.data.model.QuizPregunta
+import com.diegoguerrero.mygeography.data.model.RegionQuiz
 import com.diegoguerrero.mygeography.data.model.TipoQuiz
 import com.diegoguerrero.mygeography.ui.components.BanderaImage
 import com.diegoguerrero.mygeography.ui.theme.*
@@ -37,39 +35,42 @@ import com.diegoguerrero.mygeography.ui.theme.*
 fun QuizScreen(
     viewModel: QuizViewModel,
     onVolverAlMenu: () -> Unit,
-    onFinalizarQuiz: () -> Unit
+    onQuizTerminado: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Manejar retroceso físico / botón back del dispositivo
+    // Manejador del botón 'Atrás' del sistema
     BackHandler {
         viewModel.setMostrarDialogoSalir(true)
     }
 
+    // Navegar a resultados cuando finalice el quiz
     LaunchedEffect(uiState.quizTerminado) {
         if (uiState.quizTerminado) {
-            onFinalizarQuiz()
+            onQuizTerminado()
         }
     }
 
-    val preguntaActual = uiState.preguntaActual
-
+    // Diálogo de confirmación para salir al menú
     if (uiState.mostrarDialogoSalir) {
         AlertDialog(
             onDismissRequest = { viewModel.setMostrarDialogoSalir(false) },
             containerColor = DarkCard,
             title = {
                 Text(
-                    text = "Abandonar test",
+                    text = "¿Deseas salir del test?",
                     color = TextPrimary,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
-                    text = "¿Deseas volver al menú principal? Se perderá el progreso de esta partida.",
+                    text = "Si sales ahora perderás tu progreso actual.",
                     color = TextSecondary,
-                    fontSize = 14.sp
+                    fontSize = 12.5.sp,
+                    maxLines = 1,
+                    softWrap = false
                 )
             },
             confirmButton = {
@@ -80,12 +81,17 @@ fun QuizScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = WrongRed)
                 ) {
-                    Text("Volver al menú", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(text = "Salir al menú", color = Color.White)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.setMostrarDialogoSalir(false) }) {
-                    Text("Continuar test", color = PrimaryBlue)
+                OutlinedButton(
+                    onClick = { viewModel.setMostrarDialogoSalir(false) },
+                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                        brush = androidx.compose.ui.graphics.SolidColor(DarkCardBorder)
+                    )
+                ) {
+                    Text(text = "Continuar", color = TextPrimary)
                 }
             }
         )
@@ -96,6 +102,7 @@ fun QuizScreen(
         topBar = {
             QuizTopBar(
                 tipoQuiz = uiState.tipoQuiz,
+                region = uiState.region,
                 indiceActual = uiState.indiceActual,
                 totalPreguntas = uiState.totalPreguntas,
                 progreso = uiState.progreso,
@@ -105,69 +112,50 @@ fun QuizScreen(
             )
         }
     ) { innerPadding ->
-        if (preguntaActual != null) {
+        uiState.preguntaActual?.let { pregunta ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                    .padding(horizontal = 14.dp, vertical = 6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Zona superior: Pregunta
+                // Cabecera con la pregunta actual
                 CabeceraPregunta(
                     tipoQuiz = uiState.tipoQuiz,
-                    pregunta = preguntaActual,
+                    pregunta = pregunta,
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Zona Central: Grid 3x3 de Opciones (9 opciones)
-                Grid3x3Opciones(
-                    tipoQuiz = uiState.tipoQuiz,
-                    opciones = preguntaActual.opciones,
-                    paisCorrecto = preguntaActual.paisCorrecto,
-                    opcionSeleccionada = uiState.opcionSeleccionada,
-                    estaEvaluando = uiState.estaEvaluando,
-                    onSeleccionar = { opcion -> viewModel.seleccionarOpcion(opcion) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f, fill = false)
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Botón visual para avanzar de inmediato si el usuario no desea esperar
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (uiState.estaEvaluando) {
-                        Button(
-                            onClick = { viewModel.avanzarSiguientePregunta() },
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth(0.7f)
-                        ) {
-                            Text(
-                                text = "Siguiente",
-                                color = DarkBackground,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Icon(
-                                imageVector = Icons.Default.ArrowForward,
-                                contentDescription = null,
-                                tint = DarkBackground,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
+                // Distribución de opciones que ocupa todo el espacio libre de la pantalla:
+                // - Banderas: 6 filas x 2 columnas (12 opciones)
+                // - Capitales: 12 filas x 1 columna (12 opciones)
+                if (uiState.tipoQuiz == TipoQuiz.BANDERAS) {
+                    GridBanderas6x2(
+                        opciones = pregunta.opciones,
+                        paisCorrecto = pregunta.paisCorrecto,
+                        opcionSeleccionada = uiState.opcionSeleccionada,
+                        estaEvaluando = uiState.estaEvaluando,
+                        onSeleccionar = { viewModel.seleccionarOpcion(it) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    )
+                } else {
+                    ListaCapitales12x1(
+                        opciones = pregunta.opciones,
+                        paisCorrecto = pregunta.paisCorrecto,
+                        opcionSeleccionada = uiState.opcionSeleccionada,
+                        estaEvaluando = uiState.estaEvaluando,
+                        onSeleccionar = { viewModel.seleccionarOpcion(it) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    )
                 }
+
+                Spacer(modifier = Modifier.height(2.dp))
             }
         }
     }
@@ -176,6 +164,7 @@ fun QuizScreen(
 @Composable
 private fun QuizTopBar(
     tipoQuiz: TipoQuiz,
+    region: RegionQuiz,
     indiceActual: Int,
     totalPreguntas: Int,
     progreso: Float,
@@ -183,6 +172,13 @@ private fun QuizTopBar(
     fallos: Int,
     onSolicitarSalir: () -> Unit
 ) {
+    val tituloModo = if (region == RegionQuiz.GLOBAL) {
+        if (tipoQuiz == TipoQuiz.BANDERAS) "Test de banderas" else "Test de capitales"
+    } else {
+        val base = if (tipoQuiz == TipoQuiz.BANDERAS) "Banderas" else "Capitales"
+        "$base • ${region.nombre}"
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -191,39 +187,42 @@ private fun QuizTopBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Botón Abandonar / Salir
+            // Botón Salir al menú
             IconButton(
                 onClick = onSolicitarSalir,
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(38.dp)
                     .clip(CircleShape)
                     .background(DarkCard)
             ) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Volver al menú",
                     tint = TextPrimary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
 
-            // Indicador de Pregunta actual
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            // Indicador de Pregunta actual y modo
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f).padding(horizontal = 6.dp)
+            ) {
                 Text(
-                    text = tipoQuiz.titulo,
+                    text = tituloModo,
                     color = PrimaryBlue,
-                    fontSize = 12.sp,
+                    fontSize = if (tituloModo.length > 25) 10.5.sp else 12.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
+                    maxLines = 1
                 )
                 Text(
                     text = "${indiceActual + 1} de $totalPreguntas",
                     color = TextPrimary,
-                    fontSize = 15.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
             }
@@ -231,7 +230,7 @@ private fun QuizTopBar(
             // Marcadores de aciertos y fallos
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 // Aciertos
                 Row(
@@ -245,13 +244,13 @@ private fun QuizTopBar(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Aciertos",
                         tint = CorrectGreen,
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(13.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(3.dp))
                     Text(
                         text = "$aciertos",
                         color = CorrectGreen,
-                        fontSize = 13.sp,
+                        fontSize = 12.5.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -268,25 +267,25 @@ private fun QuizTopBar(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Fallos",
                         tint = WrongRed,
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(13.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(3.dp))
                     Text(
                         text = "$fallos",
                         color = WrongRed,
-                        fontSize = 13.sp,
+                        fontSize = 12.5.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
         }
 
-        // Barra de progreso animada
+        // Barra de progreso continua
         LinearProgressIndicator(
             progress = { progreso },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(4.dp),
+                .height(3.5.dp),
             color = PrimaryBlue,
             trackColor = DarkCardBorder
         )
@@ -301,85 +300,103 @@ private fun CabeceraPregunta(
 ) {
     Card(
         modifier = modifier
-            .shadow(4.dp, RoundedCornerShape(16.dp))
-            .border(1.dp, DarkCardBorder, RoundedCornerShape(16.dp)),
+            .shadow(3.dp, RoundedCornerShape(14.dp))
+            .border(1.dp, DarkCardBorder, RoundedCornerShape(14.dp)),
         colors = CardDefaults.cardColors(containerColor = DarkCard),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(14.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            when (tipoQuiz) {
-                TipoQuiz.BANDERAS -> {
+        when (tipoQuiz) {
+            TipoQuiz.BANDERAS -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
                         text = "¿QUÉ BANDERA ES?",
                         color = PrimaryBlue,
-                        fontSize = 12.sp,
+                        fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
                     )
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
 
-                    Text(
-                        text = pregunta.paisCorrecto.nombre,
+                    TextoAjustable(
+                        texto = pregunta.paisCorrecto.nombre,
                         color = TextPrimary,
-                        fontSize = 24.sp,
                         fontWeight = FontWeight.ExtraBold,
                         textAlign = TextAlign.Center,
-                        lineHeight = 30.sp
+                        baseSize = 20
                     )
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(1.dp))
 
                     Text(
                         text = pregunta.paisCorrecto.continente.nombre,
                         color = TextMuted,
-                        fontSize = 12.sp,
+                        fontSize = 10.5.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
+            }
 
-                TipoQuiz.CAPITALES -> {
-                    // Muestra país y su bandera arriba
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+            TipoQuiz.CAPITALES -> {
+                // Cabecera dividida: Lado izquierdo FIJO para bandera, lado derecho para textos
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Bandera fija en tamaño y posición sin reborde
+                    Box(
+                        modifier = Modifier
+                            .width(88.dp)
+                            .height(56.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         BanderaImage(
                             codigo = pregunta.paisCorrecto.codigo,
-                            modifier = Modifier
-                                .size(width = 96.dp, height = 64.dp)
-                                .clip(RoundedCornerShape(8.dp)),
-                            elevation = 4.dp
+                            modifier = Modifier.fillMaxSize(),
+                            borderWidth = 0.dp,
+                            elevation = 0.dp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    // Lado derecho: Textos con tamaño ajustable para no mover la bandera
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "CAPITAL DE",
+                            color = AccentGold,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
                         )
 
-                        Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
 
-                        Column {
-                            Text(
-                                text = "¿CAPITAL DE:",
-                                color = AccentGold,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
-                            )
-                            Text(
-                                text = pregunta.paisCorrecto.nombre,
-                                color = TextPrimary,
-                                fontSize = 21.sp,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                            Text(
-                                text = pregunta.paisCorrecto.continente.nombre,
-                                color = TextSecondary,
-                                fontSize = 12.sp
-                            )
-                        }
+                        TextoAjustable(
+                            texto = pregunta.paisCorrecto.nombre,
+                            color = TextPrimary,
+                            fontWeight = FontWeight.ExtraBold,
+                            textAlign = TextAlign.Start,
+                            baseSize = 18
+                        )
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Text(
+                            text = pregunta.paisCorrecto.continente.nombre,
+                            color = TextSecondary,
+                            fontSize = 10.5.sp
+                        )
                     }
                 }
             }
@@ -387,9 +404,12 @@ private fun CabeceraPregunta(
     }
 }
 
+/**
+ * Cuadrícula 6 filas x 2 columnas para el Test de Banderas (12 opciones).
+ * Se expande proporcionalmente para ocupar el espacio restante de la pantalla.
+ */
 @Composable
-private fun Grid3x3Opciones(
-    tipoQuiz: TipoQuiz,
+private fun GridBanderas6x2(
     opciones: List<Pais>,
     paisCorrecto: Pais,
     opcionSeleccionada: Pais?,
@@ -397,22 +417,26 @@ private fun Grid3x3Opciones(
     onSeleccionar: (Pais) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Organiza las 9 opciones en 3 filas de 3 columnas
-    val filas = opciones.chunked(3)
+    val filas = opciones.chunked(2)
 
     Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
         for (fila in filas) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 for (opcion in fila) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        OpcionCard(
-                            tipoQuiz = tipoQuiz,
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                    ) {
+                        OpcionBanderaCard(
                             opcion = opcion,
                             paisCorrecto = paisCorrecto,
                             opcionSeleccionada = opcionSeleccionada,
@@ -427,8 +451,7 @@ private fun Grid3x3Opciones(
 }
 
 @Composable
-private fun OpcionCard(
-    tipoQuiz: TipoQuiz,
+private fun OpcionBanderaCard(
     opcion: Pais,
     paisCorrecto: Pais,
     opcionSeleccionada: Pais?,
@@ -438,7 +461,6 @@ private fun OpcionCard(
     val esEstaSeleccionada = opcion.codigo == opcionSeleccionada?.codigo
     val esEstaCorrecta = opcion.codigo == paisCorrecto.codigo
 
-    // Determinación de colores según la respuesta
     val targetBorderColor = when {
         estaEvaluando && esEstaCorrecta -> CorrectGreenBorder
         estaEvaluando && esEstaSeleccionada && !esEstaCorrecta -> WrongRedBorder
@@ -463,14 +485,12 @@ private fun OpcionCard(
         label = "bgColor"
     )
 
-    val shape = RoundedCornerShape(12.dp)
-    val borderWidth = if (estaEvaluando && (esEstaCorrecta || esEstaSeleccionada)) 2.5.dp else 1.dp
+    val shape = RoundedCornerShape(10.dp)
+    val borderWidth = if (estaEvaluando && (esEstaCorrecta || esEstaSeleccionada)) 2.dp else 1.dp
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(if (tipoQuiz == TipoQuiz.BANDERAS) 1.25f else 1.15f)
-            .shadow(3.dp, shape)
+            .fillMaxSize()
             .clip(shape)
             .border(borderWidth, borderColor, shape)
             .clickable(enabled = !estaEvaluando) { onSeleccionar() },
@@ -478,74 +498,153 @@ private fun OpcionCard(
         shape = shape
     ) {
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 6.dp, vertical = 3.dp),
             contentAlignment = Alignment.Center
         ) {
-            when (tipoQuiz) {
-                TipoQuiz.BANDERAS -> {
-                    BanderaImage(
-                        codigo = opcion.codigo,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(4.dp),
-                        cornerRadius = 8.dp,
-                        borderWidth = 0.dp
-                    )
-                }
+            BanderaImage(
+                codigo = opcion.codigo,
+                modifier = Modifier.fillMaxSize(),
+                borderWidth = 0.dp,
+                elevation = 0.dp
+            )
+        }
+    }
+}
 
-                TipoQuiz.CAPITALES -> {
-                    Text(
-                        text = opcion.capital,
-                        color = if (estaEvaluando && esEstaCorrecta) CorrectGreen
-                                else if (estaEvaluando && esEstaSeleccionada && !esEstaCorrecta) WrongRed
-                                else TextPrimary,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(6.dp),
-                        lineHeight = 16.sp
-                    )
-                }
-            }
-
-            // Indicador de resultado (Checkmark o Cruz) si fue seleccionada o es la correcta
-            if (estaEvaluando) {
-                if (esEstaCorrecta) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp)
-                            .size(22.dp)
-                            .clip(CircleShape)
-                            .background(CorrectGreen),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = "Correcta",
-                            tint = Color.White,
-                            modifier = Modifier.size(15.dp)
-                        )
-                    }
-                } else if (esEstaSeleccionada) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp)
-                            .size(22.dp)
-                            .clip(CircleShape)
-                            .background(WrongRed),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Incorrecta",
-                            tint = Color.White,
-                            modifier = Modifier.size(15.dp)
-                        )
-                    }
-                }
+/**
+ * Lista 12 filas x 1 columna para el Test de Capitales (12 opciones).
+ * Se expande proporcionalmente para ocupar el espacio restante de la pantalla.
+ */
+@Composable
+private fun ListaCapitales12x1(
+    opciones: List<Pais>,
+    paisCorrecto: Pais,
+    opcionSeleccionada: Pais?,
+    estaEvaluando: Boolean,
+    onSeleccionar: (Pais) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        for (opcion in opciones) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                OpcionCapitalCard(
+                    opcion = opcion,
+                    paisCorrecto = paisCorrecto,
+                    opcionSeleccionada = opcionSeleccionada,
+                    estaEvaluando = estaEvaluando,
+                    onSeleccionar = { onSeleccionar(opcion) }
+                )
             }
         }
     }
+}
+
+@Composable
+private fun OpcionCapitalCard(
+    opcion: Pais,
+    paisCorrecto: Pais,
+    opcionSeleccionada: Pais?,
+    estaEvaluando: Boolean,
+    onSeleccionar: () -> Unit
+) {
+    val esEstaSeleccionada = opcion.codigo == opcionSeleccionada?.codigo
+    val esEstaCorrecta = opcion.codigo == paisCorrecto.codigo
+
+    val targetBorderColor = when {
+        estaEvaluando && esEstaCorrecta -> CorrectGreenBorder
+        estaEvaluando && esEstaSeleccionada && !esEstaCorrecta -> WrongRedBorder
+        else -> DarkCardBorder
+    }
+
+    val targetBgColor = when {
+        estaEvaluando && esEstaCorrecta -> CorrectGreenBg
+        estaEvaluando && esEstaSeleccionada && !esEstaCorrecta -> WrongRedBg
+        else -> DarkCard
+    }
+
+    val borderColor by animateColorAsState(
+        targetValue = targetBorderColor,
+        animationSpec = tween(250),
+        label = "borderColor"
+    )
+
+    val bgColor by animateColorAsState(
+        targetValue = targetBgColor,
+        animationSpec = tween(250),
+        label = "bgColor"
+    )
+
+    val shape = RoundedCornerShape(8.dp)
+    val borderWidth = if (estaEvaluando && (esEstaCorrecta || esEstaSeleccionada)) 2.dp else 1.dp
+
+    Card(
+        modifier = Modifier
+            .fillMaxSize()
+            .clip(shape)
+            .border(borderWidth, borderColor, shape)
+            .clickable(enabled = !estaEvaluando) { onSeleccionar() },
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        shape = shape
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            TextoAjustable(
+                texto = opcion.capital,
+                color = when {
+                    estaEvaluando && esEstaCorrecta -> CorrectGreen
+                    estaEvaluando && esEstaSeleccionada && !esEstaCorrecta -> WrongRed
+                    else -> TextPrimary
+                },
+                fontWeight = if (estaEvaluando && (esEstaCorrecta || esEstaSeleccionada))
+                    FontWeight.ExtraBold else FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                baseSize = 14
+            )
+        }
+    }
+}
+
+/**
+ * Componente que ajusta dinámicamente el tamaño de fuente si el texto es muy largo
+ * para garantizar que siempre se mantenga en una sola línea sin desbordar ni desplazar componentes.
+ */
+@Composable
+fun TextoAjustable(
+    texto: String,
+    modifier: Modifier = Modifier,
+    color: Color = TextPrimary,
+    fontWeight: FontWeight = FontWeight.Bold,
+    textAlign: TextAlign = TextAlign.Center,
+    baseSize: Int = 18
+) {
+    val fontSize = when {
+        texto.length > 28 -> (baseSize - 6).coerceAtLeast(9).sp
+        texto.length > 22 -> (baseSize - 4).coerceAtLeast(10).sp
+        texto.length > 16 -> (baseSize - 2).coerceAtLeast(11).sp
+        else -> baseSize.sp
+    }
+
+    Text(
+        text = texto,
+        modifier = modifier,
+        color = color,
+        fontSize = fontSize,
+        fontWeight = fontWeight,
+        textAlign = textAlign,
+        maxLines = 1,
+        softWrap = false
+    )
 }

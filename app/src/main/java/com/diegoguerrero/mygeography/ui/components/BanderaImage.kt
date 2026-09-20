@@ -20,7 +20,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.diegoguerrero.mygeography.ui.theme.DarkCardBorder
 import com.diegoguerrero.mygeography.ui.theme.TextMuted
 
 @Composable
@@ -28,11 +27,12 @@ fun BanderaImage(
     codigo: String,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
-    cornerRadius: Dp = 8.dp,
-    borderColor: Color = DarkCardBorder,
-    borderWidth: Dp = 1.dp,
-    elevation: Dp = 2.dp,
-    contentScale: ContentScale = ContentScale.Crop
+    cornerRadius: Dp = 6.dp,
+    borderColor: Color = Color.Transparent,
+    borderWidth: Dp = 0.dp,
+    elevation: Dp = 0.dp,
+    backgroundColor: Color = Color.Transparent,
+    contentScale: ContentScale = ContentScale.Fit
 ) {
     val context = LocalContext.current
     val imageBitmap = remember(codigo) {
@@ -47,12 +47,19 @@ fun BanderaImage(
 
     val shape = RoundedCornerShape(cornerRadius)
 
+    val baseModifier = if (elevation > 0.dp) {
+        modifier.shadow(elevation, shape)
+    } else {
+        modifier
+    }
+
+    val clippedModifier = baseModifier
+        .clip(shape)
+        .then(if (backgroundColor != Color.Transparent) Modifier.background(backgroundColor) else Modifier)
+        .then(if (borderWidth > 0.dp) Modifier.border(borderWidth, borderColor, shape) else Modifier)
+
     Box(
-        modifier = modifier
-            .shadow(elevation, shape)
-            .clip(shape)
-            .background(Color(0xFF161F33))
-            .border(borderWidth, borderColor, shape),
+        modifier = clippedModifier,
         contentAlignment = Alignment.Center
     ) {
         if (imageBitmap != null) {

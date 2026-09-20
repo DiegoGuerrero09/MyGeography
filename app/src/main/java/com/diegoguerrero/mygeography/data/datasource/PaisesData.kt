@@ -2,9 +2,15 @@ package com.diegoguerrero.mygeography.data.datasource
 
 import com.diegoguerrero.mygeography.data.model.Continente
 import com.diegoguerrero.mygeography.data.model.Pais
+import java.text.Collator
+import java.util.Locale
 
 object PaisesData {
-    val listaPaises: List<Pais> = listOf(
+    private val collatorEspanol: Collator = Collator.getInstance(Locale("es", "ES")).apply {
+        strength = Collator.SECONDARY
+    }
+
+    private val rawListaPaises: List<Pais> = listOf(
         Pais(codigo = "af", nombre = "Afganistán", capital = "Kabul", continente = Continente.ASIA, esSoberano = true),
         Pais(codigo = "ax", nombre = "Åland", capital = "Mariehamn", continente = Continente.EUROPA, esSoberano = false),
         Pais(codigo = "al", nombre = "Albania", capital = "Tirana", continente = Continente.EUROPA, esSoberano = true),
@@ -259,5 +265,9 @@ object PaisesData {
         Pais(codigo = "ye", nombre = "Yemen", capital = "Saná", continente = Continente.ASIA, esSoberano = true),
         Pais(codigo = "zm", nombre = "Zambia", capital = "Lusaka", continente = Continente.AFRICA, esSoberano = true),
         Pais(codigo = "zw", nombre = "Zimbabue", capital = "Harare", continente = Continente.AFRICA, esSoberano = true),
+    )
+
+    val listaPaises: List<Pais> = rawListaPaises.sortedWith(
+        compareBy(collatorEspanol) { it.nombre }
     )
 }

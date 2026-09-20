@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.diegoguerrero.mygeography.data.model.Pais
 import com.diegoguerrero.mygeography.data.model.QuizPregunta
+import com.diegoguerrero.mygeography.data.model.RegionQuiz
 import com.diegoguerrero.mygeography.data.model.RespuestaQuiz
 import com.diegoguerrero.mygeography.data.model.TipoQuiz
 import com.diegoguerrero.mygeography.data.repository.PaisesRepository
@@ -17,6 +18,7 @@ import kotlinx.coroutines.launch
 
 data class QuizUiState(
     val tipoQuiz: TipoQuiz = TipoQuiz.BANDERAS,
+    val region: RegionQuiz = RegionQuiz.GLOBAL,
     val preguntas: List<QuizPregunta> = emptyList(),
     val indiceActual: Int = 0,
     val opcionSeleccionada: Pais? = null,
@@ -51,15 +53,16 @@ class QuizViewModel(
 
     private var autoAvanzarJob: Job? = null
 
-    fun iniciarQuiz(tipo: TipoQuiz) {
+    fun iniciarQuiz(tipo: TipoQuiz, region: RegionQuiz = RegionQuiz.GLOBAL) {
         autoAvanzarJob?.cancel()
         val preguntas = when (tipo) {
-            TipoQuiz.BANDERAS -> repository.generarQuizBanderas()
-            TipoQuiz.CAPITALES -> repository.generarQuizCapitales()
+            TipoQuiz.BANDERAS -> repository.generarQuizBanderas(region)
+            TipoQuiz.CAPITALES -> repository.generarQuizCapitales(region)
         }
 
         _uiState.value = QuizUiState(
             tipoQuiz = tipo,
+            region = region,
             preguntas = preguntas,
             indiceActual = 0,
             opcionSeleccionada = null,

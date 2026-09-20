@@ -20,12 +20,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.diegoguerrero.mygeography.data.model.RegionQuiz
 import com.diegoguerrero.mygeography.data.model.RespuestaQuiz
 import com.diegoguerrero.mygeography.data.model.TipoQuiz
+import com.diegoguerrero.mygeography.data.preferences.EstadisticasManager
+import com.diegoguerrero.mygeography.data.repository.PaisesRepository
 import com.diegoguerrero.mygeography.ui.components.BanderaImage
+import com.diegoguerrero.mygeography.ui.screens.quiz.TextoAjustable
 import com.diegoguerrero.mygeography.ui.theme.*
 
 private enum class FiltroResultados(val titulo: String) {
@@ -37,6 +43,7 @@ private enum class FiltroResultados(val titulo: String) {
 @Composable
 fun ResultadosScreen(
     tipoQuiz: TipoQuiz,
+    region: RegionQuiz = RegionQuiz.GLOBAL,
     respuestas: List<RespuestaQuiz>,
     onVolverAlMenu: () -> Unit,
     onReiniciarQuiz: () -> Unit
@@ -47,6 +54,30 @@ fun ResultadosScreen(
     val acertadas = respuestas.count { it.esCorrecta }
     val falladas = respuestas.count { !it.esCorrecta }
     val porcentaje = if (total > 0) ((acertadas.toFloat() / total.toFloat()) * 100).toInt() else 0
+
+    // Guardar el récord en estadísticas
+    val context = LocalContext.current
+    val statsManager = remember { EstadisticasManager(context) }
+    val repository = remember { PaisesRepository() }
+
+    LaunchedEffect(porcentaje) {
+        // Guardar el porcentaje del ámbito jugado
+        statsManager.guardarPorcentaje(tipoQuiz, region, porcentaje)
+
+        // Si se jugó el test global, calcular y actualizar también los récords de cada continente
+        if (region == RegionQuiz.GLOBAL) {
+            RegionQuiz.values().filter { it != RegionQuiz.GLOBAL }.forEach { regionItem ->
+                val respuestasRegion = respuestas.filter {
+                    repository.perteneceARegion(it.pregunta.paisCorrecto, regionItem)
+                }
+                if (respuestasRegion.isNotEmpty()) {
+                    val aciertosRegion = respuestasRegion.count { it.esCorrecta }
+                    val porcentajeRegion = ((aciertosRegion.toFloat() / respuestasRegion.size.toFloat()) * 100).toInt()
+                    statsManager.guardarPorcentaje(tipoQuiz, regionItem, porcentajeRegion)
+                }
+            }
+        }
+    }
 
     val respuestasFiltradas = remember(filtroSeleccionado, respuestas) {
         when (filtroSeleccionado) {
@@ -105,7 +136,7 @@ fun ResultadosScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            "Volver al Menú",
+                            "Volver al menú",
                             color = DarkBackground,
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 14.sp
@@ -127,6 +158,7 @@ fun ResultadosScreen(
                 // Tarjeta de Resumen General
                 CardResumenGeneral(
                     tipoQuiz = tipoQuiz,
+                    region = region,
                     total = total,
                     acertadas = acertadas,
                     falladas = falladas,
@@ -177,7 +209,7 @@ fun ResultadosScreen(
 
             item {
                 Text(
-                    text = "Detalle de Respuestas (${respuestasFiltradas.size})",
+                    text = "Detalle de respuestas (${respuestasFiltradas.size})",
                     color = TextPrimary,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
@@ -185,11 +217,45 @@ fun ResultadosScreen(
                 )
             }
 
-            items(respuestasFiltradas) { itemRespuesta ->
-                ItemDetalleRespuesta(
-                    tipoQuiz = tipoQuiz,
-                    respuesta = itemRespuesta
-                )
+            // Si no hay aciertos o fallos, mostrar un mensaje claro
+            if (respuestasFiltradas.isEmpty()) {
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        colors = CardDefaults.cardColors(containerColor = DarkCard),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 20.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = when (filtroSeleccionado) {
+                                    FiltroResultados.ACERTADAS -> "No tuviste ningún acierto en este test."
+                                    FiltroResultados.FALLADAS -> "¡Excelente! No cometiste ningún fallo en este test."
+                                    else -> "No hay respuestas disponibles."
+                                },
+                                color = TextSecondary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                    }
+                }
+            } else {
+                items(respuestasFiltradas) { itemRespuesta ->
+                    ItemDetalleRespuesta(
+                        tipoQuiz = tipoQuiz,
+                        respuesta = itemRespuesta
+                    )
+                }
             }
 
             item {
@@ -202,12 +268,19 @@ fun ResultadosScreen(
 @Composable
 private fun CardResumenGeneral(
     tipoQuiz: TipoQuiz,
+    region: RegionQuiz,
     total: Int,
     acertadas: Int,
     falladas: Int,
     porcentaje: Int
 ) {
     val shape = RoundedCornerShape(20.dp)
+    val tituloModo = if (region == RegionQuiz.GLOBAL) {
+        if (tipoQuiz == TipoQuiz.BANDERAS) "Test de banderas" else "Test de capitales"
+    } else {
+        val base = if (tipoQuiz == TipoQuiz.BANDERAS) "Test de banderas" else "Test de capitales"
+        "$base • ${region.nombre}"
+    }
 
     Card(
         modifier = Modifier
@@ -241,14 +314,14 @@ private fun CardResumenGeneral(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Resumen del Test",
+                text = "Resumen del test",
                 color = TextPrimary,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.ExtraBold
             )
 
             Text(
-                text = tipoQuiz.titulo,
+                text = tituloModo,
                 color = PrimaryBlue,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
@@ -276,7 +349,7 @@ private fun CardResumenGeneral(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Dos bloques: Acertadas y Falladas
+            // Dos bloques: Acertadas y Falladas (texto centrado vertical y horizontalmente)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -289,33 +362,39 @@ private fun CardResumenGeneral(
                     colors = CardDefaults.cardColors(containerColor = CorrectGreenBg),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            tint = CorrectGreen,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = CorrectGreen,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "$acertadas",
                                 color = CorrectGreen,
-                                fontSize = 18.sp,
+                                fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                            Text(
-                                text = "Acertadas",
-                                color = CorrectGreen,
-                                fontSize = 11.sp
-                            )
                         }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Acertadas",
+                            color = CorrectGreen,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
 
@@ -327,33 +406,39 @@ private fun CardResumenGeneral(
                     colors = CardDefaults.cardColors(containerColor = WrongRedBg),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = null,
-                            tint = WrongRed,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = null,
+                                tint = WrongRed,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "$falladas",
                                 color = WrongRed,
-                                fontSize = 18.sp,
+                                fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                            Text(
-                                text = "Falladas",
-                                color = WrongRed,
-                                fontSize = 11.sp
-                            )
                         }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Falladas",
+                            color = WrongRed,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
             }
@@ -380,27 +465,28 @@ private fun ItemDetalleRespuesta(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Bandera del país
+            // Bandera del país sin reborde (tamaño fijo)
             BanderaImage(
                 codigo = paisCorrecto.codigo,
                 modifier = Modifier
-                    .size(width = 62.dp, height = 42.dp)
-                    .clip(RoundedCornerShape(6.dp)),
-                elevation = 2.dp
+                    .size(width = 68.dp, height = 45.dp),
+                borderWidth = 0.dp,
+                elevation = 0.dp
             )
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
             // Información de la pregunta y respuesta
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = paisCorrecto.nombre,
+                TextoAjustable(
+                    texto = paisCorrecto.nombre,
                     color = TextPrimary,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Start,
+                    baseSize = 14
                 )
 
                 when (tipoQuiz) {
@@ -409,7 +495,7 @@ private fun ItemDetalleRespuesta(
                             Text(
                                 text = "¡Bandera acertada!",
                                 color = CorrectGreen,
-                                fontSize = 12.sp,
+                                fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Medium
                             )
                         } else {
@@ -420,19 +506,21 @@ private fun ItemDetalleRespuesta(
                                 Text(
                                     text = "Elegiste: ",
                                     color = WrongRed,
-                                    fontSize = 12.sp
+                                    fontSize = 11.5.sp
                                 )
                                 BanderaImage(
                                     codigo = respuesta.opcionSeleccionada.codigo,
                                     modifier = Modifier
-                                        .size(width = 24.dp, height = 16.dp)
-                                        .clip(RoundedCornerShape(2.dp))
+                                        .size(width = 24.dp, height = 16.dp),
+                                    borderWidth = 0.dp,
+                                    elevation = 0.dp
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = "(${respuesta.opcionSeleccionada.nombre})",
                                     color = TextMuted,
-                                    fontSize = 11.sp
+                                    fontSize = 11.sp,
+                                    maxLines = 1
                                 )
                             }
                         }
@@ -443,21 +531,24 @@ private fun ItemDetalleRespuesta(
                             Text(
                                 text = "Capital: ${paisCorrecto.capital}",
                                 color = CorrectGreen,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1
                             )
                         } else {
                             Column(modifier = Modifier.padding(top = 2.dp)) {
                                 Text(
                                     text = "Elegiste: ${respuesta.opcionSeleccionada.capital}",
                                     color = WrongRed,
-                                    fontSize = 12.sp
+                                    fontSize = 11.5.sp,
+                                    maxLines = 1
                                 )
                                 Text(
                                     text = "Correcta: ${paisCorrecto.capital}",
                                     color = CorrectGreen,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1
                                 )
                             }
                         }
@@ -465,7 +556,9 @@ private fun ItemDetalleRespuesta(
                 }
             }
 
-            // Icono de estado
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Icono de estado fijo
             Box(
                 modifier = Modifier
                     .size(28.dp)

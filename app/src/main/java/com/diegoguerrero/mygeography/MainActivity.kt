@@ -13,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.diegoguerrero.mygeography.data.model.TipoQuiz
+import com.diegoguerrero.mygeography.ui.screens.globo.GloboTerraqueoScreen
 import com.diegoguerrero.mygeography.ui.screens.listado.ListadoPaisesScreen
 import com.diegoguerrero.mygeography.ui.screens.menu.MenuScreen
 import com.diegoguerrero.mygeography.ui.screens.quiz.QuizScreen
@@ -27,6 +28,7 @@ sealed class Screen(val route: String) {
     object Quiz : Screen("quiz")
     object Resultados : Screen("resultados")
     object Listado : Screen("listado")
+    object Globo : Screen("globo")
 }
 
 class MainActivity : ComponentActivity() {
@@ -67,16 +69,19 @@ fun MainAppNavigation(quizViewModel: QuizViewModel) {
     ) {
         composable(Screen.Menu.route) {
             MenuScreen(
-                onIniciarQuizBanderas = {
-                    quizViewModel.iniciarQuiz(TipoQuiz.BANDERAS)
+                onIniciarQuizBanderas = { region ->
+                    quizViewModel.iniciarQuiz(TipoQuiz.BANDERAS, region)
                     navController.navigate(Screen.Quiz.route)
                 },
-                onIniciarQuizCapitales = {
-                    quizViewModel.iniciarQuiz(TipoQuiz.CAPITALES)
+                onIniciarQuizCapitales = { region ->
+                    quizViewModel.iniciarQuiz(TipoQuiz.CAPITALES, region)
                     navController.navigate(Screen.Quiz.route)
                 },
                 onAbrirListado = {
                     navController.navigate(Screen.Listado.route)
+                },
+                onAbrirGlobo = {
+                    navController.navigate(Screen.Globo.route)
                 }
             )
         }
@@ -89,7 +94,7 @@ fun MainAppNavigation(quizViewModel: QuizViewModel) {
                         popUpTo(Screen.Menu.route) { inclusive = true }
                     }
                 },
-                onFinalizarQuiz = {
+                onQuizTerminado = {
                     navController.navigate(Screen.Resultados.route) {
                         popUpTo(Screen.Quiz.route) { inclusive = true }
                     }
@@ -100,6 +105,7 @@ fun MainAppNavigation(quizViewModel: QuizViewModel) {
         composable(Screen.Resultados.route) {
             ResultadosScreen(
                 tipoQuiz = uiState.tipoQuiz,
+                region = uiState.region,
                 respuestas = uiState.respuestas,
                 onVolverAlMenu = {
                     navController.navigate(Screen.Menu.route) {
@@ -107,7 +113,7 @@ fun MainAppNavigation(quizViewModel: QuizViewModel) {
                     }
                 },
                 onReiniciarQuiz = {
-                    quizViewModel.iniciarQuiz(uiState.tipoQuiz)
+                    quizViewModel.iniciarQuiz(uiState.tipoQuiz, uiState.region)
                     navController.navigate(Screen.Quiz.route) {
                         popUpTo(Screen.Resultados.route) { inclusive = true }
                     }
@@ -117,6 +123,14 @@ fun MainAppNavigation(quizViewModel: QuizViewModel) {
 
         composable(Screen.Listado.route) {
             ListadoPaisesScreen(
+                onVolverAlMenu = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.Globo.route) {
+            GloboTerraqueoScreen(
                 onVolverAlMenu = {
                     navController.popBackStack()
                 }
