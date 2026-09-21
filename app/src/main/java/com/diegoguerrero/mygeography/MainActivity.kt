@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.diegoguerrero.mygeography.data.datasource.PaisesData
 import com.diegoguerrero.mygeography.data.model.TipoQuiz
 import com.diegoguerrero.mygeography.ui.screens.globo.GloboTerraqueoScreen
 import com.diegoguerrero.mygeography.ui.screens.listado.ListadoPaisesScreen
@@ -37,6 +38,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        PaisesData.inicializar(applicationContext)
         setContent {
             MyGeographyTheme {
                 Surface(

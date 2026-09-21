@@ -104,8 +104,8 @@ fun GloboTerraqueoScreen(
         }
     }
 
-    val todosPaises = remember { PaisesData.listaPaises }
-    val paisesFiltrados = remember(queryBusqueda) {
+    val todosPaises by PaisesData.paisesFlow.collectAsState()
+    val paisesFiltrados = remember(queryBusqueda, todosPaises) {
         if (queryBusqueda.isBlank()) emptyList()
         else {
             val q = queryBusqueda.trim().lowercase()
@@ -838,7 +838,7 @@ private fun LienzoGlobo(
     val textMeasurer = rememberTextMeasurer()
 
     // Caché de países, masas de tierra y fronteras políticas
-    val listaPaises = remember { PaisesData.listaPaises }
+    val listaPaises by PaisesData.paisesFlow.collectAsState()
     val masasTierra = remember { TierrasData.masasDeTierra }
     val fronterasPaises = remember { TierrasData.fronterasPaises }
 

@@ -2,6 +2,7 @@ package com.diegoguerrero.mygeography.ui.screens.listado
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,11 +10,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -92,15 +96,23 @@ fun ListadoPaisesScreen(
     var textoBusqueda by remember { mutableStateOf("") }
     var filtroSeleccionado by remember { mutableStateOf(CategoriaFiltro.TODOS) }
     var paisSeleccionadoParaModal by remember { mutableStateOf<Pais?>(null) }
+    var mostrarDialogoEditarCapital by remember { mutableStateOf(false) }
+    var textoNuevaCapital by remember { mutableStateOf("") }
+    var errorCapital by remember { mutableStateOf<String?>(null) }
 
-    val todosLosPaises = remember { PaisesData.listaPaises }
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        PaisesData.inicializar(context)
+    }
+
+    val todosLosPaises by PaisesData.paisesFlow.collectAsState()
     val collatorEspanol = remember {
         Collator.getInstance(Locale("es", "ES")).apply {
             strength = Collator.SECONDARY
         }
     }
 
-    val paisesFiltrados = remember(textoBusqueda, filtroSeleccionado) {
+    val paisesFiltrados = remember(textoBusqueda, filtroSeleccionado, todosLosPaises) {
         todosLosPaises.filter { pais ->
             val coincideFiltro = when (filtroSeleccionado) {
                 CategoriaFiltro.TODOS -> true
@@ -131,7 +143,6 @@ fun ListadoPaisesScreen(
     // Modal inferior con detalle completo del país y botón a Wikipedia al pulsar en la lista
     if (paisSeleccionadoParaModal != null) {
         val pais = paisSeleccionadoParaModal!!
-        val context = LocalContext.current
         val regionInfo = remember(pais) { obtenerRegionBadgeInfo(pais) }
         val coords = remember(pais) { CoordenadasPaises.obtener(pais.codigo) }
         val wikiUrl = remember(pais.nombre) {
@@ -166,10 +177,34 @@ fun ListadoPaisesScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(3.dp))
-                        CapitalModalAutoAjustable(
-                            capital = pais.capital,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CapitalModalAutoAjustable(
+                                capital = pais.capital,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            FilledTonalIconButton(
+                                onClick = {
+                                    textoNuevaCapital = pais.capital
+                                    errorCapital = null
+                                    mostrarDialogoEditarCapital = true
+                                },
+                                modifier = Modifier.size(28.dp),
+                                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = Color(0xFF1E293B),
+                                    contentColor = PrimaryCyan
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Editar capital manualmente",
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -251,34 +286,235 @@ fun ListadoPaisesScreen(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // Botón Wikipedia
-                Button(
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(wikiUrl))
-                        context.startActivity(intent)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(46.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                // Botones de acción: Editar Capital y Wikipedia
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Wikipedia",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    OutlinedButton(
+                        onClick = {
+                            textoNuevaCapital = pais.capital
+                            errorCapital = null
+                            mostrarDialogoEditarCapital = true
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, PrimaryCyan.copy(alpha = 0.6f)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color(0xFF0F172A),
+                            contentColor = PrimaryCyan
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(17.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Editar capital",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(wikiUrl))
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                            contentDescription = null,
+                            modifier = Modifier.size(17.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Wikipedia",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
+    }
+
+    // Diálogo para editar la capital manualmente
+    if (mostrarDialogoEditarCapital && paisSeleccionadoParaModal != null) {
+        val paisActual = paisSeleccionadoParaModal!!
+        val capitalOriginal = remember(paisActual.codigo) {
+            PaisesData.obtenerCapitalOriginal(paisActual.codigo) ?: paisActual.capital
+        }
+        val esPersonalizada = remember(paisActual.codigo, todosLosPaises) {
+            PaisesData.esCapitalPersonalizada(paisActual.codigo)
+        }
+
+        AlertDialog(
+            onDismissRequest = { mostrarDialogoEditarCapital = false },
+            containerColor = DarkCard,
+            shape = RoundedCornerShape(20.dp),
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(PrimaryCyan.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = null,
+                        tint = PrimaryCyan,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            },
+            title = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Editar capital",
+                        color = TextPrimary,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = paisActual.nombre,
+                        color = PrimaryCyan,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    OutlinedTextField(
+                        value = textoNuevaCapital,
+                        onValueChange = {
+                            textoNuevaCapital = it
+                            if (errorCapital != null && it.isNotBlank()) {
+                                errorCapital = null
+                            }
+                        },
+                        label = { Text("Capital") },
+                        placeholder = { Text("Escribe la capital...") },
+                        singleLine = true,
+                        isError = errorCapital != null,
+                        supportingText = {
+                            if (errorCapital != null) {
+                                Text(
+                                    text = errorCapital!!,
+                                    color = Color(0xFFEF4444),
+                                    fontSize = 12.sp
+                                )
+                            } else if (esPersonalizada) {
+                                Text(
+                                    text = "Capital predeterminada: $capitalOriginal",
+                                    color = TextMuted,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        },
+                        trailingIcon = {
+                            if (textoNuevaCapital.isNotEmpty()) {
+                                IconButton(onClick = { textoNuevaCapital = "" }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Clear,
+                                        contentDescription = "Limpiar",
+                                        tint = TextMuted
+                                    )
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = DarkBackground,
+                            unfocusedContainerColor = DarkBackground,
+                            focusedBorderColor = PrimaryCyan,
+                            unfocusedBorderColor = DarkCardBorder,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedLabelColor = PrimaryCyan,
+                            unfocusedLabelColor = TextMuted
+                        )
+                    )
+
+                    if (esPersonalizada || textoNuevaCapital.trim() != capitalOriginal) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        TextButton(
+                            onClick = {
+                                textoNuevaCapital = capitalOriginal
+                                errorCapital = null
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = null,
+                                tint = PrimaryCyan,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Restablecer capital original",
+                                color = PrimaryCyan,
+                                fontSize = 12.5.sp
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val nueva = textoNuevaCapital.trim()
+                        if (nueva.isBlank()) {
+                            errorCapital = "La capital no puede estar vacía"
+                            return@Button
+                        }
+                        val paisActualizado = if (nueva == capitalOriginal) {
+                            PaisesData.restablecerCapital(paisActual.codigo, context)
+                        } else {
+                            PaisesData.actualizarCapital(paisActual.codigo, nueva, context)
+                        }
+                        if (paisActualizado != null) {
+                            paisSeleccionadoParaModal = paisActualizado
+                        }
+                        mostrarDialogoEditarCapital = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Guardar", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { mostrarDialogoEditarCapital = false }
+                ) {
+                    Text("Cancelar", color = TextSecondary)
+                }
+            }
+        )
     }
 
     Scaffold(

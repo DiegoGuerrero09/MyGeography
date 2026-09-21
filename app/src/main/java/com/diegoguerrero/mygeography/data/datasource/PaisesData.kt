@@ -1,9 +1,14 @@
 package com.diegoguerrero.mygeography.data.datasource
 
+import android.content.Context
 import com.diegoguerrero.mygeography.data.model.Continente
 import com.diegoguerrero.mygeography.data.model.Pais
+import com.diegoguerrero.mygeography.data.preferences.CapitalesManager
 import java.text.Collator
 import java.util.Locale
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 object PaisesData {
     private val collatorEspanol: Collator = Collator.getInstance(Locale("es", "ES")).apply {
@@ -102,7 +107,7 @@ object PaisesData {
         Pais(codigo = "gf", nombre = "Guayana Francesa", capital = "Cayena", continente = Continente.AMERICA, esSoberano = false, estadoSoberano = "Francia"),
         Pais(codigo = "gg", nombre = "Guernsey", capital = "Saint Peter Port", continente = Continente.EUROPA, esSoberano = false, estadoSoberano = "Reino Unido"),
         Pais(codigo = "gn", nombre = "Guinea", capital = "Conakri", continente = Continente.AFRICA, esSoberano = true),
-        Pais(codigo = "gq", nombre = "Guinea Ecuatorial", capital = "Malabo", continente = Continente.AFRICA, esSoberano = true),
+        Pais(codigo = "gq", nombre = "Guinea Ecuatorial", capital = "Ciudad de la Paz / Malabo", continente = Continente.AFRICA, esSoberano = true),
         Pais(codigo = "gw", nombre = "Guinea-Bisáu", capital = "Bisáu", continente = Continente.AFRICA, esSoberano = true),
         Pais(codigo = "gy", nombre = "Guyana", capital = "Georgetown", continente = Continente.AMERICA, esSoberano = true),
         Pais(codigo = "ht", nombre = "Haití", capital = "Puerto Príncipe", continente = Continente.AMERICA, esSoberano = true),
@@ -110,7 +115,7 @@ object PaisesData {
         Pais(codigo = "hk", nombre = "Hong Kong", capital = "Hong Kong", continente = Continente.ASIA, esSoberano = false, estadoSoberano = "China"),
         Pais(codigo = "hu", nombre = "Hungría", capital = "Budapest", continente = Continente.EUROPA, esSoberano = true),
         Pais(codigo = "in", nombre = "India", capital = "Nueva Delhi", continente = Continente.ASIA, esSoberano = true),
-        Pais(codigo = "id", nombre = "Indonesia", capital = "Yakarta", continente = Continente.ASIA, esSoberano = true),
+        Pais(codigo = "id", nombre = "Indonesia", capital = "Nusantara / Yakarta", continente = Continente.ASIA, esSoberano = true),
         Pais(codigo = "gb-eng", nombre = "Inglaterra", capital = "Londres", continente = Continente.EUROPA, esSoberano = false, estadoSoberano = "Reino Unido"),
         Pais(codigo = "iq", nombre = "Irak", capital = "Bagdad", continente = Continente.ASIA, esSoberano = true),
         Pais(codigo = "ir", nombre = "Irán", capital = "Teherán", continente = Continente.ASIA, esSoberano = true),
@@ -267,7 +272,68 @@ object PaisesData {
         Pais(codigo = "zw", nombre = "Zimbabue", capital = "Harare", continente = Continente.AFRICA, esSoberano = true),
     )
 
-    val listaPaises: List<Pais> = rawListaPaises.sortedWith(
-        compareBy(collatorEspanol) { it.nombre }
-    )
+    private val capitalesPersonalizadas = mutableMapOf<String, String>()
+    private var manager: CapitalesManager? = null
+
+    private fun calcularListaPaises(): List<Pais> {
+        return rawListaPaises.map { pais ->
+            val capitalCustom = capitalesPersonalizadas[pais.codigo.lowercase()]
+            if (capitalCustom != null) pais.copy(capital = capitalCustom) else pais
+        }.sortedWith(compareBy(collatorEspanol) { it.nombre })
+    }
+
+    private val _paisesFlow = MutableStateFlow<List<Pais>>(calcularListaPaises())
+    val paisesFlow: StateFlow<List<Pais>> = _paisesFlow.asStateFlow()
+
+    @Volatile
+    private var _listaPaises: List<Pais> = calcularListaPaises()
+
+    val listaPaises: List<Pais>
+        get() = _listaPaises
+
+    private fun actualizarListaInterna() {
+        val nuevaLista = calcularListaPaises()
+        _listaPaises = nuevaLista
+        _paisesFlow.value = nuevaLista
+    }
+
+    fun inicializar(context: Context) {
+        if (manager == null) {
+            manager = CapitalesManager(context.applicationContext)
+            capitalesPersonalizadas.clear()
+            capitalesPersonalizadas.putAll(manager!!.obtenerTodas())
+            actualizarListaInterna()
+        }
+    }
+
+    fun actualizarCapital(codigo: String, nuevaCapital: String, context: Context? = null): Pais? {
+        val codigoLimpio = codigo.lowercase()
+        val capitalLimpia = nuevaCapital.trim()
+        if (context != null && manager == null) {
+            manager = CapitalesManager(context.applicationContext)
+        }
+        capitalesPersonalizadas[codigoLimpio] = capitalLimpia
+        manager?.guardarCapital(codigoLimpio, capitalLimpia)
+        actualizarListaInterna()
+        return listaPaises.find { it.codigo.equals(codigoLimpio, ignoreCase = true) }
+    }
+
+    fun restablecerCapital(codigo: String, context: Context? = null): Pais? {
+        val codigoLimpio = codigo.lowercase()
+        if (context != null && manager == null) {
+            manager = CapitalesManager(context.applicationContext)
+        }
+        capitalesPersonalizadas.remove(codigoLimpio)
+        manager?.eliminarCapital(codigoLimpio)
+        actualizarListaInterna()
+        return listaPaises.find { it.codigo.equals(codigoLimpio, ignoreCase = true) }
+    }
+
+    fun esCapitalPersonalizada(codigo: String): Boolean {
+        return capitalesPersonalizadas.containsKey(codigo.lowercase())
+    }
+
+    fun obtenerCapitalOriginal(codigo: String): String? {
+        return rawListaPaises.find { it.codigo.equals(codigo, ignoreCase = true) }?.capital
+    }
 }
