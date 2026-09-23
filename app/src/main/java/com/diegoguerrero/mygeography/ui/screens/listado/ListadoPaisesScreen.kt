@@ -74,16 +74,32 @@ private val codigosAntartida = setOf(
 
 data class RegionBadgeInfo(val nombre: String, val color: Color)
 
+private fun colorCategoriaFiltro(filtro: CategoriaFiltro): Color {
+    return when (filtro) {
+        CategoriaFiltro.TODOS -> Color(0xFF94A3B8)
+        CategoriaFiltro.INDEPENDIENTES -> Color(0xFFFACC15) // Dorado soberano
+        CategoriaFiltro.DEPENDIENTES -> Color(0xFFCBD5E1)   // Gris territorio
+        CategoriaFiltro.EUROPA -> Color(0xFF38BDF8)         // Celeste
+        CategoriaFiltro.AFRICA -> Color(0xFFF59E0B)         // Ámbar cálido
+        CategoriaFiltro.ASIA -> Color(0xFFEF4444)           // Rojo coral
+        CategoriaFiltro.OCEANIA -> Color(0xFF10B981)        // Verde esmeralda
+        CategoriaFiltro.NORTEAMERICA -> Color(0xFF06B6D4)   // Cian brillante
+        CategoriaFiltro.CENTROAMERICA -> Color(0xFF06B6D4)  // Cian brillante
+        CategoriaFiltro.SUDAMERICA -> Color(0xFFA855F7)     // Púrpura brillante
+        CategoriaFiltro.ANTARTIDA -> Color(0xFFA855F7)      // Púrpura brillante
+    }
+}
+
 fun obtenerRegionBadgeInfo(pais: Pais): RegionBadgeInfo {
     return when {
         pais.continente == Continente.EUROPA -> RegionBadgeInfo("Europa", Color(0xFF38BDF8)) // Celeste
-        pais.continente == Continente.AFRICA -> RegionBadgeInfo("África", Color(0xFFD97706)) // Ámbar
-        pais.continente == Continente.ASIA -> RegionBadgeInfo("Asia", Color(0xFFEF4444))     // Rojo
+        pais.continente == Continente.AFRICA -> RegionBadgeInfo("África", Color(0xFFF59E0B)) // Ámbar cálido
+        pais.continente == Continente.ASIA -> RegionBadgeInfo("Asia", Color(0xFFEF4444))     // Rojo coral
         pais.continente == Continente.OCEANIA -> RegionBadgeInfo("Oceanía", Color(0xFF10B981)) // Esmeralda
-        pais.codigo in codigosAntartida || pais.continente == Continente.ANTARTIDA -> RegionBadgeInfo("Antártida", Color(0xFF94A3B8)) // Hielo
+        pais.codigo in codigosAntartida || pais.continente == Continente.ANTARTIDA -> RegionBadgeInfo("Antártida", Color(0xFFA855F7)) // Púrpura
         pais.codigo in codigosSudamerica -> RegionBadgeInfo("Sudamérica", Color(0xFFA855F7)) // Púrpura
         pais.codigo in codigosNorteamerica -> RegionBadgeInfo("Norteamérica", Color(0xFF06B6D4)) // Cian
-        pais.continente == Continente.AMERICA -> RegionBadgeInfo("Centroamérica", Color(0xFF84CC16)) // Verde lima tropical
+        pais.continente == Continente.AMERICA -> RegionBadgeInfo("Centroamérica", Color(0xFF06B6D4)) // Cian
         else -> RegionBadgeInfo(pais.continente.nombre, Color(0xFF64748B))
     }
 }
@@ -690,6 +706,7 @@ private fun FilaFiltros(
     ) {
         items(CategoriaFiltro.values()) { filtro ->
             val esActivo = filtro == filtroSeleccionado
+            val colorFiltro = colorCategoriaFiltro(filtro)
             FilterChip(
                 selected = esActivo,
                 onClick = { onSeleccionarFiltro(filtro) },
@@ -697,18 +714,18 @@ private fun FilaFiltros(
                     Text(
                         text = filtro.label,
                         fontSize = 12.sp,
-                        fontWeight = if (esActivo) FontWeight.Bold else FontWeight.Normal
+                        fontWeight = if (esActivo) FontWeight.Bold else FontWeight.Medium
                     )
                 },
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = DarkCard,
                     labelColor = TextSecondary,
-                    selectedContainerColor = PrimaryBlue,
-                    selectedLabelColor = DarkBackground
+                    selectedContainerColor = colorFiltro,
+                    selectedLabelColor = if (filtro == CategoriaFiltro.INDEPENDIENTES || filtro == CategoriaFiltro.DEPENDIENTES || filtro == CategoriaFiltro.TODOS) DarkBackground else Color.White
                 ),
                 border = FilterChipDefaults.filterChipBorder(
-                    borderColor = if (esActivo) PrimaryBlue else DarkCardBorder,
-                    selectedBorderColor = PrimaryBlue,
+                    borderColor = if (esActivo) colorFiltro else DarkCardBorder,
+                    selectedBorderColor = colorFiltro,
                     enabled = true,
                     selected = esActivo
                 ),

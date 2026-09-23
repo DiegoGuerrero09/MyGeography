@@ -158,14 +158,14 @@ fun ResultadosScreen(
         if (region == RegionQuiz.GLOBAL) {
             listOf(
                 FiltroCategoriaResultados.GLOBAL,
+                FiltroCategoriaResultados.INDEPENDIENTES,
+                FiltroCategoriaResultados.DEPENDIENTES,
                 FiltroCategoriaResultados.AFRICA,
                 FiltroCategoriaResultados.ASIA,
                 FiltroCategoriaResultados.EUROPA,
                 FiltroCategoriaResultados.NORTEAMERICA_CENTROAMERICA,
                 FiltroCategoriaResultados.OCEANIA,
-                FiltroCategoriaResultados.SUDAMERICA_ANTARTIDA,
-                FiltroCategoriaResultados.INDEPENDIENTES,
-                FiltroCategoriaResultados.DEPENDIENTES
+                FiltroCategoriaResultados.SUDAMERICA_ANTARTIDA
             )
         } else {
             listOf(
@@ -435,20 +435,18 @@ fun ResultadosScreen(
                                 .padding(horizontal = 12.dp, vertical = 20.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = when (filtroSeleccionado) {
+                            TextoAjustable(
+                                texto = when (filtroSeleccionado) {
                                     FiltroResultados.ACERTADAS -> "No tuviste ningún acierto en este test."
                                     FiltroResultados.FALLADAS -> "¡Excelente! No cometiste ningún fallo en este test."
-                                    FiltroResultados.FALLO_BANDERA -> "¡Excelente! No cometiste ningún fallo en bandera."
-                                    FiltroResultados.FALLO_CAPITAL -> "¡Excelente! No cometiste ningún fallo en capital."
+                                    FiltroResultados.FALLO_BANDERA -> "¡Excelente! No cometiste ningún fallo en las banderas."
+                                    FiltroResultados.FALLO_CAPITAL -> "¡Excelente! No cometiste ningún fallo en las capitales."
                                     else -> "No hay respuestas disponibles."
                                 },
                                 color = TextSecondary,
-                                fontSize = 12.sp,
+                                baseSize = 12,
                                 fontWeight = FontWeight.SemiBold,
-                                textAlign = TextAlign.Center,
-                                maxLines = 1,
-                                softWrap = false
+                                textAlign = TextAlign.Center
                             )
                         }
                     }

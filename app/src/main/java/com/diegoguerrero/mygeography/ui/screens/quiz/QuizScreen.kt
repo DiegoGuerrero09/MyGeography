@@ -38,6 +38,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.diegoguerrero.mygeography.data.model.Pais
@@ -105,13 +106,15 @@ fun QuizScreen(
                 }
             },
             dismissButton = {
-                OutlinedButton(
+                Button(
                     onClick = { viewModel.setMostrarDialogoSalir(false) },
-                    border = ButtonDefaults.outlinedButtonBorder.copy(
-                        brush = androidx.compose.ui.graphics.SolidColor(DarkCardBorder)
-                    )
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                 ) {
-                    Text(text = "Continuar", color = TextPrimary)
+                    Text(
+                        text = "Continuar",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         )
@@ -531,61 +534,57 @@ private fun CabeceraPregunta(
 
             TipoQuiz.MIXTO -> {
                 if (modoCompacto) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 3.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TextoAjustable(
-                            texto = pregunta.paisCorrecto.nombre,
-                            modifier = Modifier.weight(1f, fill = false),
-                            color = TextPrimary,
-                            fontWeight = FontWeight.ExtraBold,
-                            textAlign = TextAlign.Center,
-                            baseSize = 15
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "•  ${pregunta.paisCorrecto.continente.nombre}",
-                            color = TextMuted,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
-                } else {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 5.dp),
+                            .padding(horizontal = 10.dp, vertical = 2.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Text(
+                            text = "BANDERA Y CAPITAL DE",
+                            color = Color(0xFFEF4444),
+                            fontSize = 8.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.8.sp,
+                            maxLines = 1
+                        )
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "¿QUÉ BANDERA Y CAPITAL ES?",
-                                color = Color(0xFFEF4444),
-                                fontSize = 9.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.8.sp,
-                                maxLines = 1,
-                                softWrap = false
+                            TextoAjustable(
+                                texto = pregunta.paisCorrecto.nombre,
+                                modifier = Modifier.weight(1f, fill = false),
+                                color = TextPrimary,
+                                fontWeight = FontWeight.ExtraBold,
+                                textAlign = TextAlign.Center,
+                                baseSize = 14
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "•  ${pregunta.paisCorrecto.continente.nombre}",
                                 color = TextMuted,
-                                fontSize = 10.sp,
+                                fontSize = 10.5.sp,
                                 fontWeight = FontWeight.Medium,
                                 maxLines = 1,
                                 softWrap = false
                             )
                         }
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 7.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "BANDERA Y CAPITAL DE",
+                            color = Color(0xFFEF4444),
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
 
                         Spacer(modifier = Modifier.height(2.dp))
 
@@ -594,7 +593,16 @@ private fun CabeceraPregunta(
                             color = TextPrimary,
                             fontWeight = FontWeight.ExtraBold,
                             textAlign = TextAlign.Center,
-                            baseSize = 17
+                            baseSize = 18
+                        )
+
+                        Spacer(modifier = Modifier.height(1.dp))
+
+                        Text(
+                            text = pregunta.paisCorrecto.continente.nombre,
+                            color = TextMuted,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
@@ -1046,7 +1054,7 @@ private fun ContenidoQuizMixto(
                             text = if (uiState.banderaEsCorrectaMixto == true) {
                                 "Escribe la capital..."
                             } else {
-                                "Elige una bandera"
+                                "Elige una bandera..."
                             },
                             color = TextMuted,
                             fontSize = 13.sp
@@ -1113,22 +1121,29 @@ private fun ContenidoQuizMixto(
                             .fillMaxWidth()
                             .height(if (modoCompacto) 32.dp else 38.dp),
                         shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = WrongRed
                         ),
                         border = BorderStroke(1.dp, WrongRed.copy(alpha = 0.7f))
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Flag,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Rendirse",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Flag,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Rendirse",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                style = LocalTextStyle.current.copy(lineHeight = 13.sp)
+                            )
+                        }
                     }
                 }
             }
