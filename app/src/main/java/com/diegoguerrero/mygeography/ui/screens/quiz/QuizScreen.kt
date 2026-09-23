@@ -1069,8 +1069,8 @@ private fun ContenidoQuizMixto(
                     ),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Celeste,
-                        unfocusedBorderColor = if (estaHabilitadoCampo) Celeste.copy(alpha = 0.85f) else DarkCardBorder,
-                        disabledBorderColor = DarkCardBorder.copy(alpha = 0.5f),
+                        unfocusedBorderColor = Celeste,
+                        disabledBorderColor = Celeste.copy(alpha = 0.5f),
                         focusedTextColor = TextPrimary,
                         unfocusedTextColor = TextPrimary,
                         disabledTextColor = TextSecondary,

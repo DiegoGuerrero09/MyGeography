@@ -84,8 +84,8 @@ private enum class FiltroResultados(val titulo: String) {
     TODAS("Todas"),
     ACERTADAS("Acertadas"),
     FALLADAS("Falladas"),
-    FALLO_BANDERA("Fallo bandera"),
-    FALLO_CAPITAL("Fallo capital")
+    FALLO_BANDERA("Fallos de bandera"),
+    FALLO_CAPITAL("Fallos de capital")
 }
 
 @Composable
@@ -342,7 +342,7 @@ fun ResultadosScreen(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         val tabsFallos = listOf(
-                            FiltroResultados.FALLADAS to "Todos fallos ($falladasCategoria)",
+                            FiltroResultados.FALLADAS to "Todos los fallos ($falladasCategoria)",
                             FiltroResultados.FALLO_BANDERA to "F. Bandera ($fallosBanderaCategoria)",
                             FiltroResultados.FALLO_CAPITAL to "F. Capital ($fallosCapitalCategoria)"
                         )
@@ -636,12 +636,12 @@ private fun CardResumenGeneral(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Fallo en Bandera
+                    // Fallos de bandera
                     Card(
                         modifier = Modifier
                             .weight(1f)
-                            .border(1.dp, WrongRedBorder.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
-                        colors = CardDefaults.cardColors(containerColor = WrongRedBg.copy(alpha = 0.65f)),
+                            .border(1.dp, DarkCardBorder, RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = DarkCard),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Column(
@@ -653,14 +653,14 @@ private fun CardResumenGeneral(
                         ) {
                             Text(
                                 text = "$fallosBandera",
-                                color = WrongRed,
+                                color = TextPrimary,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "Fallo bandera",
-                                color = WrongRed,
+                                text = "Fallos de bandera",
+                                color = TextSecondary,
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.Center
@@ -668,12 +668,12 @@ private fun CardResumenGeneral(
                         }
                     }
 
-                    // Fallo en Capital
+                    // Fallos de capital
                     Card(
                         modifier = Modifier
                             .weight(1f)
-                            .border(1.dp, WrongRedBorder.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
-                        colors = CardDefaults.cardColors(containerColor = WrongRedBg.copy(alpha = 0.65f)),
+                            .border(1.dp, DarkCardBorder, RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = DarkCard),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Column(
@@ -685,14 +685,14 @@ private fun CardResumenGeneral(
                         ) {
                             Text(
                                 text = "$fallosCapital",
-                                color = WrongRed,
+                                color = TextPrimary,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "Fallo capital",
-                                color = WrongRed,
+                                text = "Fallos de capital",
+                                color = TextSecondary,
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.Center
@@ -863,7 +863,7 @@ private fun ItemDetalleRespuesta(
                                     }
                                 } else if (respuesta.seHaRendido) {
                                     Text(
-                                        text = "Te has rendido en la capital",
+                                        text = "¡Te has rendido en la capital!",
                                         color = WrongRed,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Medium

@@ -78,8 +78,8 @@ Al pulsar sobre cualquiera de los modos de juego, la aplicación despliega un di
     - En tests regionales: por *Independientes* y *Dependientes*.
   - **Filtro por tipo de fallo en Test Mixto:** Estructura idéntica y simétrica a los otros tests con pestañas dedicadas:
     - `Todas`, `Acertadas`, `Falladas`
-    - Subpestañas de fallos: `Todos fallos`, `F. Bandera`, `F. Capital`
-    - Desglose visual en el resumen con cajas independientes de **Fallo bandera** y **Fallo capital**.
+    - Subpestañas de fallos: `Todos los fallos`, `F. Bandera`, `F. Capital`
+    - Desglose visual en el resumen con cajas independientes de **Fallos de bandera** y **Fallos de capital** (con fondo oscuro integrado, sin fondo rojo).
   - Detalle individual de cada respuesta con estado, bandera elegida y capital escrita/correcta.
   - **Propagación de récords:** Al completar un test global, se calculan y actualizan automáticamente las puntuaciones para cada continente.
 - **Apartado de estadísticas:** Tarjeta de 3 columnas en menú principal para consultar récords de Banderas, Capitales y Mixto en todos los ámbitos.
