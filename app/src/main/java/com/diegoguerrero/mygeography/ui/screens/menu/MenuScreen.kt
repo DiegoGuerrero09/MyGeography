@@ -424,29 +424,29 @@ private fun CardEstadisticasConRegiones(
     val mejorCapitales = statsManager.obtenerMejorPorcentaje(TipoQuiz.CAPITALES, regionSeleccionada)
     val mejorMixto = statsManager.obtenerMejorPorcentaje(TipoQuiz.MIXTO, regionSeleccionada)
     val shape = RoundedCornerShape(16.dp)
-    val colorAmarilloAcento = Color(0xFFEAB308) // Amarillo/Oro
+    val colorAmarilloAcento = Color(0xFFFACC15) // Amarillo más limpio y brillante
 
     Card(
         modifier = modifier
             .shadow(4.dp, shape)
             .clip(shape)
-            .border(1.2.dp, colorAmarilloAcento.copy(alpha = 0.5f), shape),
+            .border(1.2.dp, colorAmarilloAcento.copy(alpha = 0.65f), shape),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
         shape = shape
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Franja superior con degradado amarillo y texto PUNTUACIONES
+            // Franja superior con degradado amarillo más vivo y texto PUNTUACIONES
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
                         Brush.horizontalGradient(
-                            listOf(Color(0xFFCA8A04), Color(0xFFA16207))
+                            listOf(Color(0xFFEAB308), Color(0xFFCA8A04))
                         )
                     )
-                    .padding(horizontal = 14.dp, vertical = 7.dp)
+                .padding(horizontal = 14.dp, vertical = 7.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
