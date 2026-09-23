@@ -814,7 +814,7 @@ fun TextoAjustable(
             } else {
                 val targetWidth = (maxWidthPx - 4).coerceAtLeast(1)
                 var size = baseSize.toFloat()
-                while (size > 5f) {
+                while (size > 4.5f) {
                     val result = textMeasurer.measure(
                         text = AnnotatedString(texto),
                         style = TextStyle(
@@ -827,7 +827,7 @@ fun TextoAjustable(
                     if (result.size.width <= targetWidth) {
                         break
                     }
-                    size -= 0.35f
+                    size -= 0.25f
                 }
                 size
             }
@@ -999,11 +999,13 @@ private fun ContenidoQuizMixto(
                             modifier = Modifier.size(15.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = uiState.feedbackMensajeMixto,
+                        TextoAjustable(
+                            texto = uiState.feedbackMensajeMixto,
+                            modifier = Modifier.weight(1f),
                             color = colorFeedback,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Start,
+                            baseSize = 12
                         )
                     }
                 }

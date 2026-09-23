@@ -1,6 +1,6 @@
 # 🌍 MyGeography
 
-**MyGeography** (v1.2.0) es una aplicación moderna para Android desarrollada con **Kotlin** y **Jetpack Compose** orientada a aprender, practicar y poner a prueba conocimientos de geografía mundial: banderas, capitales, modo mixto, estadísticas regionales, filtros analíticos y atlas de naciones.
+**MyGeography** (v1.2.1) es una aplicación moderna para Android desarrollada con **Kotlin** y **Jetpack Compose** orientada a aprender, practicar y poner a prueba conocimientos de geografía mundial: banderas, capitales, modo mixto, estadísticas regionales, filtros analíticos y atlas de naciones.
 
 ---
 
@@ -49,7 +49,8 @@ Al pulsar sobre cualquiera de los modos de juego, la aplicación despliega un di
   - Insensible a mayúsculas, minúsculas, tildes (p. ej. *Valparaiso* por *Valparaíso*) y espacios sobrantes.
   - Admite sustitución de caracteres nórdicos o especiales (p. ej. *O* por *Ø* en Tórshavn, *C* por *Ç* en Curazao/Curaçao) y guiones por espacios.
   - Valida nombres compuestos con sus espacios correspondientes (p. ej. *Pago Pago*) y formas internacionales comunes (p. ej. *Dakar* en lugar de *Dacar*, *Beijing* por *Pekín*).
-  - En países con múltiples capitales oficiales (Sudáfrica, Bolivia, Países Bajos, etc.), se valida como correcta cualquiera de ellas y se muestran las alternativas.
+  - En países con múltiples capitales oficiales (Sudáfrica, Bolivia, Países Bajos, etc.), se valida como correcta cualquiera de ellas.
+- **Feedback enriquecido en una sola línea:** Tanto al acertar como al fallar o rendirse, se muestra la capital oficial (`¡Correcto! La capital era: ...`), adaptando el tamaño tipográfico con `TextoAjustable` para que siempre quepa íntegramente en una única línea, incluso en países con múltiples capitales.
 - **Botón de Rendirse:** Centrado verticalmente con icono y texto en una sola línea; permite avanzar mostrando la capital correcta si no se recuerda, contando como fallo en capital.
 - **Datos geográficos actualizados:** Capital de Kiribati actualizada a *Tarawa Sur*.
 - **Cascada de estadísticas:** Al alcanzar un porcentaje en el Test Mixto, las puntuaciones de Banderas y Capitales se elevan automáticamente a dicho porcentaje como mínimo.

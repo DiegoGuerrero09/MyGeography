@@ -175,7 +175,7 @@ class QuizViewModel(
                 it.copy(
                     banderaSeleccionadaMixto = opcion,
                     banderaEsCorrectaMixto = false,
-                    feedbackMensajeMixto = "¡Bandera incorrecta! La capital es: ${preguntaActual.paisCorrecto.capital}",
+                    feedbackMensajeMixto = "¡Bandera incorrecta! La capital era: ${preguntaActual.paisCorrecto.capital}",
                     respuestasPorIndice = it.respuestasPorIndice + (it.indiceActual to respuesta)
                 )
             }
@@ -214,11 +214,7 @@ class QuizViewModel(
         // Validación automática: en cuanto lo escrito coincide con una capital válida, pasa automáticamente
         if (textoEscrito.isNotBlank() && ValidadorCapital.esCapitalValida(preguntaActual.paisCorrecto, textoEscrito)) {
             val otras = ValidadorCapital.obtenerOtrasCapitales(preguntaActual.paisCorrecto, textoEscrito)
-            val feedback = if (otras.isNotEmpty()) {
-                "¡Correcto! Otras capitales: ${otras.joinToString(", ")}"
-            } else {
-                "¡Correcto!"
-            }
+            val feedback = "¡Correcto! La capital era: ${preguntaActual.paisCorrecto.capital}"
 
             val respuesta = RespuestaQuiz(
                 pregunta = preguntaActual,
@@ -266,11 +262,7 @@ class QuizViewModel(
 
         if (esValida) {
             val otras = ValidadorCapital.obtenerOtrasCapitales(preguntaActual.paisCorrecto, textoEscrito)
-            val feedback = if (otras.isNotEmpty()) {
-                "¡Correcto! Otras capitales: ${otras.joinToString(", ")}"
-            } else {
-                "¡Correcto!"
-            }
+            val feedback = "¡Correcto! La capital era: ${preguntaActual.paisCorrecto.capital}"
 
             val respuesta = RespuestaQuiz(
                 pregunta = preguntaActual,
@@ -317,7 +309,7 @@ class QuizViewModel(
 
         _uiState.update {
             it.copy(
-                feedbackMensajeMixto = "Te has rendido. La capital es: ${preguntaActual.paisCorrecto.capital}",
+                feedbackMensajeMixto = "¡Te has rendido en la capital! La capital era: ${preguntaActual.paisCorrecto.capital}",
                 respuestasPorIndice = it.respuestasPorIndice + (it.indiceActual to respuesta)
             )
         }
@@ -334,12 +326,13 @@ class QuizViewModel(
         if (respuesta != null) {
             val pregunta = respuesta.pregunta
             val feedback = if (respuesta.esCorrecta) {
-                val otras = ValidadorCapital.obtenerOtrasCapitales(pregunta.paisCorrecto, respuesta.capitalEscrita ?: "")
-                if (otras.isNotEmpty()) "¡Correcto! Otras capitales: ${otras.joinToString(", ")}" else "¡Correcto!"
+                "¡Correcto! La capital era: ${pregunta.paisCorrecto.capital}"
             } else if (respuesta.falloEnBandera) {
-                "¡Bandera incorrecta! La capital es: ${pregunta.paisCorrecto.capital}"
+                "¡Bandera incorrecta! La capital era: ${pregunta.paisCorrecto.capital}"
+            } else if (respuesta.seHaRendido) {
+                "¡Te has rendido en la capital! La capital era: ${pregunta.paisCorrecto.capital}"
             } else {
-                "La capital es: ${pregunta.paisCorrecto.capital}"
+                "La capital era: ${pregunta.paisCorrecto.capital}"
             }
 
             _uiState.update {
