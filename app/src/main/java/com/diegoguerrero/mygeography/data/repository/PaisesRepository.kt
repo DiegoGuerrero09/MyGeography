@@ -1,5 +1,6 @@
 package com.diegoguerrero.mygeography.data.repository
 
+import com.diegoguerrero.mygeography.data.datasource.CoordenadasPaises
 import com.diegoguerrero.mygeography.data.datasource.PaisesData
 import com.diegoguerrero.mygeography.data.model.Continente
 import com.diegoguerrero.mygeography.data.model.Pais
@@ -55,6 +56,30 @@ class PaisesRepository {
         return gruposBanderasConfusas.any { grupo ->
             codigoA in grupo && codigoB in grupo
         }
+    }
+
+    /**
+     * Calcula la distancia geodésica ortodrómica en kilómetros entre dos países utilizando la fórmula de Haversine.
+     */
+    fun calcularDistanciaKm(codigoA: String, codigoB: String): Double {
+        val coordA = CoordenadasPaises.obtener(codigoA) ?: return Double.MAX_VALUE
+        val coordB = CoordenadasPaises.obtener(codigoB) ?: return Double.MAX_VALUE
+
+        val lat1Rad = Math.toRadians(coordA.first.toDouble())
+        val lon1Rad = Math.toRadians(coordA.second.toDouble())
+        val lat2Rad = Math.toRadians(coordB.first.toDouble())
+        val lon2Rad = Math.toRadians(coordB.second.toDouble())
+
+        val dLat = lat2Rad - lat1Rad
+        val dLon = lon2Rad - lon1Rad
+
+        val sinDLat2 = Math.sin(dLat / 2)
+        val sinDLon2 = Math.sin(dLon / 2)
+
+        val a = sinDLat2 * sinDLat2 + Math.cos(lat1Rad) * Math.cos(lat2Rad) * sinDLon2 * sinDLon2
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+        return 6371.0 * c
     }
 
     fun obtenerIndependientes(): List<Pais> = PaisesData.listaPaises.filter { it.esSoberano }
@@ -192,13 +217,33 @@ class PaisesRepository {
         // Guayanas y norte de Sudamérica
         setOf("gy", "sr", "gf", "ve"),
         // Regiones polares / Antártida
-        setOf("aq", "tf", "bv", "gs", "hm")
+        setOf("aq", "tf", "bv", "gs", "hm"),
+        // Barras y estrellas / cantón superior izquierdo con franjas rojas y blancas
+        setOf("us", "lr", "my", "cu", "pr"),
+        // Disco / círculo centrado o descentrado (sol o luna)
+        setOf("jp", "bd", "pw", "kr", "la", "gl", "ne", "in"),
+        // Sol radiante / estrella dorada con rayos
+        setOf("ar", "uy", "ph", "mk", "rw", "na", "kz", "kg", "mw", "ag"),
+        // Cruces simétricas o griegas
+        setOf("ch", "ge", "to", "do", "gr", "gb", "mt"),
+        // Tricolor horizontal azul, blanco y rojo (y variantes parecidas)
+        setOf("nl", "lu", "py", "hr", "si", "sk", "ru", "rs", "fr", "th", "cr"),
+        // Banderas de fondo rojo con emblema / estrella central
+        setOf("cn", "vn", "al", "me", "kg", "ma", "tr", "tn", "hk", "tw", "ws", "to"),
+        // Azul celeste y blanco
+        setOf("ar", "uy", "gt", "hn", "sv", "ni", "so", "fm", "sm", "il", "gr"),
+        // Triángulo en el batiente / lateral del asta
+        setOf("cu", "pr", "ph", "jo", "ps", "sd", "eh", "gy", "zw", "vu", "mz", "st", "cz", "tl", "bs", "gq", "ss", "dj", "km"),
+        // Banderas con predominio de verde
+        setOf("sa", "pk", "ng", "mr", "tm", "bd", "dz", "br", "zm", "dm"),
+        // Franjas diagonales distintivas
+        setOf("tt", "cd", "cg", "tz", "na", "sc", "sb", "bn", "gy", "kn")
     )
 
     /**
      * Genera el Test Mixto:
      * - 8 opciones de banderas parecidas (1 correcta + 7 distractores) en 4 filas y 2 columnas.
-     * - Se priorizan banderas con estructuras, símbolos o colores similares, o países vecinos.
+     * - Se priorizan banderas con diseño, simbología o colores similares y/o países cercanos por proximidad geográfica.
      */
     fun generarQuizMixto(
         region: RegionQuiz = RegionQuiz.GLOBAL,
@@ -212,30 +257,40 @@ class PaisesRepository {
         return preguntasBarajadas.mapIndexed { index, paisCorrecto ->
             val distractores = mutableListOf<Pais>()
 
-            // 1. Obtener candidatos de grupos con banderas similares / países vecinos
-            val candidatosSimilares = gruposBanderasSimilares
+            // 1. Obtener candidatos con banderas similares según los grupos definidos
+            val similaresBrutos = gruposBanderasSimilares
                 .filter { paisCorrecto.codigo in it }
                 .flatMap { it }
                 .distinct()
                 .filter { it != paisCorrecto.codigo }
                 .mapNotNull { universoPorCodigo[it] }
-                .filter { !sonBanderasConfusas(it.codigo, paisCorrecto.codigo) }
-                .shuffled()
+                .filter { perteneceARegion(it, region) && !sonBanderasConfusas(it.codigo, paisCorrecto.codigo) }
 
-            for (candidato in candidatosSimilares) {
+            // Ordenar similares por distancia geográfica para favorecer también afinidad territorial
+            val similaresOrdenados = similaresBrutos
+                .sortedBy { calcularDistanciaKm(paisCorrecto.codigo, it.codigo) }
+            val poolSimilares = similaresOrdenados.take(8).shuffled()
+
+            // Tomar hasta 4 banderas similares para dejar siempre hueco a países vecinos por proximidad
+            val numSimilares = minOf(poolSimilares.size, 4)
+            for (candidato in poolSimilares.take(numSimilares)) {
                 if (distractores.none { it.codigo == candidato.codigo || sonBanderasConfusas(it.codigo, candidato.codigo) }) {
                     distractores.add(candidato)
                     if (distractores.size == 7) break
                 }
             }
 
-            // 2. Si se necesitan más distractores, completar con países de la misma región o continente
-            if (distractores.size < 7) {
-                val candidatosRegion = universo
-                    .filter { it.codigo != paisCorrecto.codigo && perteneceARegion(it, region) && !sonBanderasConfusas(it.codigo, paisCorrecto.codigo) }
-                    .shuffled()
+            // 2. Completar los huecos restantes hasta 7 con países cercanos por proximidad geográfica
+            val faltantes = 7 - distractores.size
+            if (faltantes > 0) {
+                val candidatosCercanos = universo
+                    .filter { it.codigo != paisCorrecto.codigo && perteneceARegion(it, region) }
+                    .filter { candidato -> distractores.none { it.codigo == candidato.codigo || sonBanderasConfusas(it.codigo, candidato.codigo) } }
+                    .sortedBy { calcularDistanciaKm(paisCorrecto.codigo, it.codigo) }
 
-                for (candidato in candidatosRegion) {
+                // Tomar de entre los más cercanos (con margen de 12 para dinamismo y variedad) y barajar
+                val poolCercanos = candidatosCercanos.take(maxOf(faltantes * 2, 12)).shuffled()
+                for (candidato in poolCercanos) {
                     if (distractores.none { it.codigo == candidato.codigo || sonBanderasConfusas(it.codigo, candidato.codigo) }) {
                         distractores.add(candidato)
                         if (distractores.size == 7) break
@@ -243,13 +298,14 @@ class PaisesRepository {
                 }
             }
 
-            // 3. Si aún faltan distractores, completar con el resto del universo
+            // 3. Si aún faltasen (ej. regiones pequeñas con pocos países), completar con cualquier restante
             if (distractores.size < 7) {
-                val restoUniverso = universo
-                    .filter { it.codigo != paisCorrecto.codigo && !sonBanderasConfusas(it.codigo, paisCorrecto.codigo) }
+                val resto = universo
+                    .filter { it.codigo != paisCorrecto.codigo && perteneceARegion(it, region) }
+                    .filter { candidato -> distractores.none { it.codigo == candidato.codigo || sonBanderasConfusas(it.codigo, candidato.codigo) } }
                     .shuffled()
 
-                for (candidato in restoUniverso) {
+                for (candidato in resto) {
                     if (distractores.none { it.codigo == candidato.codigo || sonBanderasConfusas(it.codigo, candidato.codigo) }) {
                         distractores.add(candidato)
                         if (distractores.size == 7) break
