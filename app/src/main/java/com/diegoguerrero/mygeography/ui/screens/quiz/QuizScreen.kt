@@ -29,6 +29,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -888,15 +889,25 @@ private fun ContenidoQuizMixto(
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     val estaHabilitadoCampo = uiState.banderaEsCorrectaMixto == true && !uiState.estaContestada
 
-    // Cuando la bandera es correcta y la pregunta no está contestada, enfocar automáticamente el campo
+    // Cuando la bandera es correcta y la pregunta no está contestada, enfocar automáticamente el campo y mostrar teclado
     LaunchedEffect(uiState.banderaEsCorrectaMixto) {
         if (uiState.banderaEsCorrectaMixto == true && !uiState.estaContestada) {
             try {
                 focusRequester.requestFocus()
+                keyboardController?.show()
             } catch (_: Exception) {}
+        }
+    }
+
+    // Cuando la pregunta pasa a estar contestada (por acierto o rendición), cerrar teclado y quitar foco
+    LaunchedEffect(uiState.estaContestada) {
+        if (uiState.estaContestada) {
+            focusManager.clearFocus()
+            keyboardController?.hide()
         }
     }
 
@@ -1003,6 +1014,7 @@ private fun ContenidoQuizMixto(
                     keyboardActions = KeyboardActions(
                         onDone = {
                             focusManager.clearFocus()
+                            keyboardController?.hide()
                             onComprobarCapital()
                         }
                     ),
@@ -1024,65 +1036,34 @@ private fun ContenidoQuizMixto(
                         .focusRequester(focusRequester)
                 )
 
-                // Botones Rendirse y Comprobar (solo visibles mientras se escribe la capital)
+                // Botón Rendirse (solo visible mientras se escribe la capital)
                 if (estaHabilitadoCampo) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    OutlinedButton(
+                        onClick = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                            onRendirse()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(38.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = WrongRed
+                        ),
+                        border = BorderStroke(1.dp, WrongRed.copy(alpha = 0.7f))
                     ) {
-                        OutlinedButton(
-                            onClick = onRendirse,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(38.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = WrongRed
-                            ),
-                            border = BorderStroke(1.dp, WrongRed.copy(alpha = 0.7f))
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Flag,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Rendirse",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-
-                        Button(
-                            onClick = {
-                                focusManager.clearFocus()
-                                onComprobarCapital()
-                            },
-                            enabled = uiState.textoCapitalMixto.isNotBlank(),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(38.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFEF4444),
-                                contentColor = Color.White,
-                                disabledContainerColor = Color(0xFF1E293B),
-                                disabledContentColor = TextMuted
-                            )
-                        ) {
-                            Text(
-                                text = "Comprobar",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Flag,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Rendirse",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }

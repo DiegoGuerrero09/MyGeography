@@ -197,16 +197,55 @@ class QuizViewModel(
     }
 
     fun actualizarTextoCapitalMixto(texto: String) {
+        val currentState = _uiState.value
+        if (currentState.estaContestada || currentState.quizTerminado) return
+        if (currentState.banderaEsCorrectaMixto != true) return
+
+        val preguntaActual = currentState.preguntaActual ?: return
+        val textoEscrito = texto.trim()
+
         _uiState.update {
             it.copy(
                 textoCapitalMixto = texto,
                 errorCapitalMixto = false
             )
         }
+
+        // Validación automática: en cuanto lo escrito coincide con una capital válida, pasa automáticamente
+        if (textoEscrito.isNotBlank() && ValidadorCapital.esCapitalValida(preguntaActual.paisCorrecto, textoEscrito)) {
+            val otras = ValidadorCapital.obtenerOtrasCapitales(preguntaActual.paisCorrecto, textoEscrito)
+            val feedback = if (otras.isNotEmpty()) {
+                "¡Correcto! Otras capitales: ${otras.joinToString(", ")}"
+            } else {
+                "¡Correcto!"
+            }
+
+            val respuesta = RespuestaQuiz(
+                pregunta = preguntaActual,
+                opcionSeleccionada = currentState.banderaSeleccionadaMixto ?: preguntaActual.paisCorrecto,
+                esCorrecta = true,
+                capitalEscrita = textoEscrito
+            )
+
+            _uiState.update {
+                it.copy(
+                    errorCapitalMixto = false,
+                    feedbackMensajeMixto = feedback,
+                    otrasCapitalesMixto = otras,
+                    respuestasPorIndice = it.respuestasPorIndice + (it.indiceActual to respuesta)
+                )
+            }
+
+            autoAvanzarJob?.cancel()
+            autoAvanzarJob = viewModelScope.launch {
+                delay(1200)
+                avanzarSiguientePregunta()
+            }
+        }
     }
 
     /**
-     * Paso 2 de Test Mixto: El usuario valida la capital escrita.
+     * Paso 2 de Test Mixto: El usuario valida la capital escrita (por ejemplo al pulsar Enter).
      * Si es correcta: cuenta acierto y avanza (mostrando otras capitales si las tiene).
      * Si es incorrecta: muestra error y NO avanza hasta que esté bien o pulse Rendirse.
      */
@@ -251,7 +290,7 @@ class QuizViewModel(
 
             autoAvanzarJob?.cancel()
             autoAvanzarJob = viewModelScope.launch {
-                delay(1500)
+                delay(1200)
                 avanzarSiguientePregunta()
             }
         } else {
