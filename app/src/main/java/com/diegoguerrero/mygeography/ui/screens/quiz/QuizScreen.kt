@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -46,6 +47,7 @@ import com.diegoguerrero.mygeography.data.model.TipoQuiz
 import com.diegoguerrero.mygeography.ui.components.BanderaImage
 import com.diegoguerrero.mygeography.ui.theme.*
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun QuizScreen(
     viewModel: QuizViewModel,
@@ -53,6 +55,9 @@ fun QuizScreen(
     onQuizTerminado: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val isImeVisible = WindowInsets.isImeVisible
+    val modoCompactoTeclado = uiState.tipoQuiz == TipoQuiz.MIXTO &&
+        (isImeVisible || (uiState.banderaEsCorrectaMixto == true && !uiState.estaContestada))
 
     // Manejador del botón 'Atrás' del sistema
     BackHandler {
@@ -132,14 +137,18 @@ fun QuizScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                    .padding(
+                        horizontal = 14.dp,
+                        vertical = if (modoCompactoTeclado) 2.dp else 6.dp
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(if (modoCompactoTeclado) 4.dp else 8.dp)
             ) {
                 // Cabecera con la pregunta actual
                 CabeceraPregunta(
                     tipoQuiz = uiState.tipoQuiz,
                     pregunta = pregunta,
+                    modoCompacto = modoCompactoTeclado,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -176,6 +185,7 @@ fun QuizScreen(
                         ContenidoQuizMixto(
                             pregunta = pregunta,
                             uiState = uiState,
+                            modoCompacto = modoCompactoTeclado,
                             onSeleccionarBandera = { viewModel.seleccionarBanderaMixto(it) },
                             onActualizarCapital = { viewModel.actualizarTextoCapitalMixto(it) },
                             onComprobarCapital = { viewModel.comprobarCapitalMixto() },
@@ -191,7 +201,10 @@ fun QuizScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 2.dp, bottom = 2.dp),
+                        .padding(
+                            top = if (modoCompactoTeclado) 1.dp else 2.dp,
+                            bottom = if (modoCompactoTeclado) 1.dp else 2.dp
+                        ),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -201,7 +214,7 @@ fun QuizScreen(
                         enabled = uiState.puedeRetroceder,
                         modifier = Modifier
                             .weight(1f)
-                            .height(44.dp),
+                            .height(if (modoCompactoTeclado) 38.dp else 44.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = Color.White,
@@ -220,7 +233,7 @@ fun QuizScreen(
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Anterior",
-                            fontSize = 15.sp,
+                            fontSize = if (modoCompactoTeclado) 13.5.sp else 15.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -231,7 +244,7 @@ fun QuizScreen(
                         enabled = uiState.puedeAvanzarManualmente,
                         modifier = Modifier
                             .weight(1f)
-                            .height(44.dp),
+                            .height(if (modoCompactoTeclado) 38.dp else 44.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (uiState.esUltimaPregunta) CorrectGreen else PrimaryBlue,
@@ -242,7 +255,7 @@ fun QuizScreen(
                     ) {
                         Text(
                             text = if (uiState.esUltimaPregunta) "Finalizar" else "Siguiente",
-                            fontSize = 15.sp,
+                            fontSize = if (modoCompactoTeclado) 13.5.sp else 15.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.width(6.dp))
@@ -407,7 +420,8 @@ private fun QuizTopBar(
 private fun CabeceraPregunta(
     tipoQuiz: TipoQuiz,
     pregunta: QuizPregunta,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    modoCompacto: Boolean = false
 ) {
     Card(
         modifier = modifier
@@ -513,38 +527,63 @@ private fun CabeceraPregunta(
             }
 
             TipoQuiz.MIXTO -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 7.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "¿QUÉ BANDERA Y CAPITAL ES?",
-                        color = Color(0xFFEF4444),
-                        fontSize = 10.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
+                if (modoCompacto) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 3.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextoAjustable(
+                            texto = pregunta.paisCorrecto.nombre,
+                            color = TextPrimary,
+                            fontWeight = FontWeight.ExtraBold,
+                            textAlign = TextAlign.Center,
+                            baseSize = 16
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "•  ${pregunta.paisCorrecto.continente.nombre}",
+                            color = TextMuted,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 7.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "¿QUÉ BANDERA Y CAPITAL ES?",
+                            color = Color(0xFFEF4444),
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
 
-                    Spacer(modifier = Modifier.height(2.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
 
-                    TextoAjustable(
-                        texto = pregunta.paisCorrecto.nombre,
-                        color = TextPrimary,
-                        fontWeight = FontWeight.ExtraBold,
-                        textAlign = TextAlign.Center,
-                        baseSize = 20
-                    )
+                        TextoAjustable(
+                            texto = pregunta.paisCorrecto.nombre,
+                            color = TextPrimary,
+                            fontWeight = FontWeight.ExtraBold,
+                            textAlign = TextAlign.Center,
+                            baseSize = 20
+                        )
 
-                    Spacer(modifier = Modifier.height(1.dp))
+                        Spacer(modifier = Modifier.height(1.dp))
 
-                    Text(
-                        text = pregunta.paisCorrecto.continente.nombre,
-                        color = TextMuted,
-                        fontSize = 10.5.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                        Text(
+                            text = pregunta.paisCorrecto.continente.nombre,
+                            color = TextMuted,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }
@@ -603,7 +642,8 @@ private fun OpcionBanderaCard(
     paisCorrecto: Pais,
     opcionSeleccionada: Pais?,
     estaEvaluando: Boolean,
-    onSeleccionar: () -> Unit
+    onSeleccionar: () -> Unit,
+    paddingVertical: androidx.compose.ui.unit.Dp = 3.dp
 ) {
     val esEstaSeleccionada = opcion.codigo == opcionSeleccionada?.codigo
     val esEstaCorrecta = opcion.codigo == paisCorrecto.codigo
@@ -647,7 +687,7 @@ private fun OpcionBanderaCard(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 6.dp, vertical = 3.dp),
+                .padding(horizontal = 6.dp, vertical = paddingVertical),
             contentAlignment = Alignment.Center
         ) {
             BanderaImage(
@@ -836,20 +876,21 @@ private fun GridBanderas4x2(
     opcionSeleccionada: Pais?,
     estaEvaluando: Boolean,
     onSeleccionar: (Pais) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    modoCompacto: Boolean = false
 ) {
     val filas = opciones.chunked(2)
 
     Column(
         modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(if (modoCompacto) 3.dp else 6.dp)
     ) {
         for (fila in filas) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(if (modoCompacto) 4.dp else 6.dp)
             ) {
                 for (opcion in fila) {
                     Box(
@@ -862,7 +903,8 @@ private fun GridBanderas4x2(
                             paisCorrecto = paisCorrecto,
                             opcionSeleccionada = opcionSeleccionada,
                             estaEvaluando = estaEvaluando,
-                            onSeleccionar = { onSeleccionar(opcion) }
+                            onSeleccionar = { onSeleccionar(opcion) },
+                            paddingVertical = if (modoCompacto) 1.5.dp else 3.dp
                         )
                     }
                 }
@@ -874,8 +916,8 @@ private fun GridBanderas4x2(
 /**
  * Contenedor para el Test Mixto:
  * 1. Cuadrícula 4x2 de banderas parecidas arriba.
- * 2. Caja de texto para la capital abajo (se activa solo al acertar la bandera).
- * 3. Botón de rendirse y botón de comprobar/siguiente.
+ * 2. Caja de texto para la capital abajo con borde celeste (se activa solo al acertar la bandera).
+ * 3. Botón de rendirse y botones de navegación siempre accesibles incluso con teclado abierto.
  */
 @Composable
 private fun ContenidoQuizMixto(
@@ -885,13 +927,15 @@ private fun ContenidoQuizMixto(
     onActualizarCapital: (String) -> Unit,
     onComprobarCapital: () -> Unit,
     onRendirse: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    modoCompacto: Boolean = false
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val estaHabilitadoCampo = uiState.banderaEsCorrectaMixto == true && !uiState.estaContestada
+    val Celeste = Color(0xFF38BDF8)
 
     // Cuando la bandera es correcta y la pregunta no está contestada, enfocar automáticamente el campo y mostrar teclado
     LaunchedEffect(uiState.banderaEsCorrectaMixto) {
@@ -913,7 +957,7 @@ private fun ContenidoQuizMixto(
 
     Column(
         modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(if (modoCompacto) 3.dp else 6.dp)
     ) {
         // Cuadrícula 4 filas x 2 columnas de banderas (8 opciones)
         GridBanderas4x2(
@@ -922,6 +966,7 @@ private fun ContenidoQuizMixto(
             opcionSeleccionada = uiState.banderaSeleccionadaMixto ?: uiState.opcionSeleccionada,
             estaEvaluando = uiState.banderaSeleccionadaMixto != null || uiState.estaContestada,
             onSeleccionar = onSeleccionarBandera,
+            modoCompacto = modoCompacto,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
@@ -931,15 +976,19 @@ private fun ContenidoQuizMixto(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, DarkCardBorder, RoundedCornerShape(12.dp)),
+                .border(
+                    width = 1.dp,
+                    color = if (estaHabilitadoCampo) Celeste.copy(alpha = 0.6f) else DarkCardBorder,
+                    shape = RoundedCornerShape(12.dp)
+                ),
             colors = CardDefaults.cardColors(containerColor = DarkCard),
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 7.dp),
-                verticalArrangement = Arrangement.spacedBy(5.dp)
+                    .padding(horizontal = 10.dp, vertical = if (modoCompacto) 4.dp else 7.dp),
+                verticalArrangement = Arrangement.spacedBy(if (modoCompacto) 3.dp else 5.dp)
             ) {
                 // Mensaje de feedback / estado
                 if (uiState.feedbackMensajeMixto != null) {
@@ -952,7 +1001,7 @@ private fun ContenidoQuizMixto(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
                             .background(bgFeedback)
-                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                            .padding(horizontal = 10.dp, vertical = if (modoCompacto) 3.dp else 5.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -971,7 +1020,7 @@ private fun ContenidoQuizMixto(
                     }
                 }
 
-                // Caja de texto para ingresar el nombre de la capital
+                // Caja de texto para ingresar el nombre de la capital con reborde celeste
                 OutlinedTextField(
                     value = uiState.textoCapitalMixto,
                     onValueChange = onActualizarCapital,
@@ -1003,7 +1052,7 @@ private fun ContenidoQuizMixto(
                         Icon(
                             imageVector = Icons.Default.LocationCity,
                             contentDescription = null,
-                            tint = if (estaHabilitadoCampo) AccentGold else TextMuted,
+                            tint = if (estaHabilitadoCampo) Celeste else TextMuted,
                             modifier = Modifier.size(18.dp)
                         )
                     },
@@ -1019,8 +1068,8 @@ private fun ContenidoQuizMixto(
                         }
                     ),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AccentGold,
-                        unfocusedBorderColor = DarkCardBorder,
+                        focusedBorderColor = Celeste,
+                        unfocusedBorderColor = if (estaHabilitadoCampo) Celeste.copy(alpha = 0.85f) else DarkCardBorder,
                         disabledBorderColor = DarkCardBorder.copy(alpha = 0.5f),
                         focusedTextColor = TextPrimary,
                         unfocusedTextColor = TextPrimary,
@@ -1028,7 +1077,8 @@ private fun ContenidoQuizMixto(
                         errorBorderColor = WrongRed,
                         focusedContainerColor = Color(0xFF0F172A),
                         unfocusedContainerColor = Color(0xFF0F172A),
-                        disabledContainerColor = Color(0xFF0F172A).copy(alpha = 0.5f)
+                        disabledContainerColor = Color(0xFF0F172A).copy(alpha = 0.5f),
+                        cursorColor = Celeste
                     ),
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier
@@ -1046,7 +1096,7 @@ private fun ContenidoQuizMixto(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(38.dp),
+                            .height(if (modoCompacto) 32.dp else 38.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = WrongRed

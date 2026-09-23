@@ -251,7 +251,7 @@ object ValidadorCapital {
         "vu" to listOf("Port Vila", "Puerto Vila"),
         "ws" to listOf("Apia"),
         "to" to listOf("Nukualofa", "Nuku'alofa"),
-        "ki" to listOf("Tarawa", "Bairiki"),
+        "ki" to listOf("Tarawa Sur", "Tarawa", "South Tarawa", "Bairiki"),
         "tv" to listOf("Funafuti"),
         "nr" to listOf("Yaren"),
         "mh" to listOf("Majuro"),

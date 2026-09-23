@@ -152,7 +152,7 @@ object PaisesData {
         Pais(codigo = "kz", nombre = "Kazajistán", capital = "Astana", continente = Continente.ASIA, esSoberano = true),
         Pais(codigo = "ke", nombre = "Kenia", capital = "Nairobi", continente = Continente.AFRICA, esSoberano = true),
         Pais(codigo = "kg", nombre = "Kirguistán", capital = "Biskek", continente = Continente.ASIA, esSoberano = true),
-        Pais(codigo = "ki", nombre = "Kiribati", capital = "Tarawa", continente = Continente.OCEANIA, esSoberano = true),
+        Pais(codigo = "ki", nombre = "Kiribati", capital = "Tarawa Sur", continente = Continente.OCEANIA, esSoberano = true),
         Pais(codigo = "xk", nombre = "Kosovo", capital = "Pristina", continente = Continente.EUROPA, esSoberano = false, estadoSoberano = "Territorio disputado"),
         Pais(codigo = "kw", nombre = "Kuwait", capital = "Ciudad de Kuwait", continente = Continente.ASIA, esSoberano = true),
         Pais(codigo = "la", nombre = "Laos", capital = "Vientián", continente = Continente.ASIA, esSoberano = true),
