@@ -971,7 +971,7 @@ private fun ContenidoQuizMixto(
                             text = if (uiState.banderaEsCorrectaMixto == true) {
                                 "Escribe la capital..."
                             } else {
-                                "1º Elige la bandera arriba"
+                                "Elige una bandera"
                             },
                             color = TextMuted,
                             fontSize = 13.sp
