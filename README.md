@@ -1,6 +1,6 @@
 # 🌍 MyGeography
 
-**MyGeography** (v1.2.1) es una aplicación moderna para Android desarrollada con **Kotlin** y **Jetpack Compose** orientada a aprender, practicar y poner a prueba conocimientos de geografía mundial: banderas, capitales, modo mixto, estadísticas regionales, filtros analíticos y atlas de naciones.
+**MyGeography** (v1.2.2) es una aplicación moderna para Android desarrollada con **Kotlin** y **Jetpack Compose** orientada a aprender, practicar y poner a prueba conocimientos de geografía mundial: banderas, capitales, modo mixto, estadísticas regionales, filtros analíticos y atlas de naciones.
 
 ---
 
@@ -23,6 +23,7 @@ Al pulsar sobre cualquiera de los modos de juego, la aplicación despliega un di
 - Para cada pregunta se muestra el **nombre del país** (con ajuste automático de tamaño para nombres largos en una sola línea) y abajo una **cuadrícula de 6 filas x 2 columnas (12 opciones)** de banderas.
 - Las opciones se expanden proporcionalmente hasta ocupar todo el espacio vertical disponible de la pantalla.
 - Banderas sin rebordes artificiales para representar fielmente banderas con proporciones no estándar (Suiza, Nepal, Ciudad del Vaticano, etc.).
+- **Filtro de banderas idénticas o confusas:** No permite que territorios con la misma bandera gráfica (como Noruega y Svalbard y Jan Mayen, o EE.UU. e Islas Ultramarinas Menores) aparezcan juntos en las opciones de una pregunta.
 - Feedback visual interactivo en tiempo real:
   - Se ilumina en **verde** al seleccionar la opción correcta.
   - Se ilumina en **rojo** si se elige una opción errónea, iluminando simultáneamente la opción correcta en **verde**.
@@ -41,18 +42,21 @@ Al pulsar sobre cualquiera de los modos de juego, la aplicación despliega un di
 - Nuevo modo accesible desde el menú principal con **borde rojo distintivo (`#EF4444`)** y etiqueta indicativa `254 PAÍSES`.
 - **Cabecera estilizada de 3 líneas:** Muestra arriba en color rojo la etiqueta `BANDERA Y CAPITAL DE`, en el centro el nombre del país (con ajuste dinámico de tamaño) y abajo el continente, todo perfectamente centrado verticalmente.
 - Cuadrícula de **8 banderas parecidas en 4 filas y 2 columnas** (1 correcta y 7 distractores seleccionados inteligentemente por familias visuales y cercanía geográfica: escandinavas, stanes, crucíferas británicas, tricolores eslavas, africanas, árabes, etc.).
+- **Emparejamiento de banderas de alta similitud:** Prioridad automática para pares clave como Micronesia y Somalia, Taiwán y Samoa, o Afganistán y Arabia Saudita.
+- **Exclusión estricta de banderas idénticas:** Se evita que banderas idénticas (p. ej. Noruega y Svalbard y Jan Mayen) aparezcan juntas.
 - **Mecánica ágil de evaluación en dos fases:**
   1. **Selección de bandera:** El usuario elige primero la bandera con indicador `Elige una bandera...`. Si falla, se contabiliza de inmediato como error en bandera y se revela la capital correcta.
   2. **Escritura de capital:** Al acertar la bandera, el test pasa de forma automática e inmediata a la caja de texto de la capital, sin necesidad de pulsar ningún botón adicional de comprobación.
 - **Campo de capital estilizado:** Caja de texto con elegante reborde celeste, compatible con la apertura del teclado virtual manteniendo en todo momento accesibles los botones de navegación y rendirse.
 - **Validador inteligente de capitales (`ValidadorCapital`):**
   - Insensible a mayúsculas, minúsculas, tildes (p. ej. *Valparaiso* por *Valparaíso*) y espacios sobrantes.
-  - Admite sustitución de caracteres nórdicos o especiales (p. ej. *O* por *Ø* en Tórshavn, *C* por *Ç* en Curazao/Curaçao) y guiones por espacios.
-  - Valida nombres compuestos con sus espacios correspondientes (p. ej. *Pago Pago*) y formas internacionales comunes (p. ej. *Dakar* en lugar de *Dacar*, *Beijing* por *Pekín*).
+  - Soporte automático para capitales con denominación "Ciudad de X" (p. ej. admitiendo *Panamá* en lugar de *Ciudad de Panamá*, *México* por *Ciudad de México*, *Guatemala*, *Kuwait*, etc.).
+  - Admite sustitución de caracteres nórdicos o especiales y guiones por espacios.
+  - Valida nombres compuestos con sus espacios correspondientes (p. ej. *Pago Pago*).
+  - Exclusiones estrictas verificadas: Kiribati solo admite *Tarawa Sur* (rechazando *Tarawa* sola), Suiza solo admite *Berna* (rechazando *Bern*), Andorra solo admite *Andorra la Vieja* o *Andorra la Vella* (rechazando *Andorra* a secas) y Estados Unidos no admite solo *Washington* (requiere *Washington DC* o *Washington D.C.*).
   - En países con múltiples capitales oficiales (Sudáfrica, Bolivia, Países Bajos, etc.), se valida como correcta cualquiera de ellas.
 - **Feedback enriquecido en una sola línea:** Tanto al acertar como al fallar o rendirse, se muestra la capital oficial (`¡Correcto! La capital era: ...`), adaptando el tamaño tipográfico con `TextoAjustable` para que siempre quepa íntegramente en una única línea, incluso en países con múltiples capitales.
 - **Botón de Rendirse:** Centrado verticalmente con icono y texto en una sola línea; permite avanzar mostrando la capital correcta si no se recuerda, contando como fallo en capital.
-- **Datos geográficos actualizados:** Capital de Kiribati actualizada a *Tarawa Sur*.
 - **Cascada de estadísticas:** Al alcanzar un porcentaje en el Test Mixto, las puntuaciones de Banderas y Capitales se elevan automáticamente a dicho porcentaje como mínimo.
 
 ### 5. 🌐 Globo terráqueo 3D interactivo

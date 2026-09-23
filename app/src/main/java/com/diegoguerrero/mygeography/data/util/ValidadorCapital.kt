@@ -133,7 +133,7 @@ object ValidadorCapital {
         "ro" to listOf("Bucarest", "Bucharest", "Bucuresti"),
         "ru" to listOf("Moscú", "Moscow", "Moskva"),
         "se" to listOf("Estocolmo", "Stockholm"),
-        "ch" to listOf("Berna", "Bern"),
+        "ch" to listOf("Berna"),
         "ua" to listOf("Kiev", "Kyiv"),
         "rs" to listOf("Belgrado", "Belgrade", "Beograd"),
         "hr" to listOf("Zagreb"),
@@ -153,7 +153,7 @@ object ValidadorCapital {
         "cy" to listOf("Nicosia", "Lefkosia"),
         "lu" to listOf("Luxemburgo", "Luxembourg"),
         "mc" to listOf("Mónaco", "Monaco"),
-        "ad" to listOf("Andorra la Vieja", "Andorra la Vella", "Andorra"),
+        "ad" to listOf("Andorra la vieja", "Andorra la Vieja", "Andorra la Vella"),
         "va" to listOf("Ciudad del Vaticano", "Vaticano", "Vatican City"),
         "sm" to listOf("San Marino"),
         "li" to listOf("Vaduz"),
@@ -206,7 +206,7 @@ object ValidadorCapital {
         "tr" to listOf("Ankara"),
 
         // América
-        "us" to listOf("Washington", "Washington D.C.", "Washington DC"),
+        "us" to listOf("Washington D.C.", "Washington DC", "Washington D C"),
         "ca" to listOf("Ottawa"),
         "mx" to listOf("Ciudad de México", "Mexico", "Mexico City", "CDMX"),
         "gt" to listOf("Ciudad de Guatemala", "Guatemala", "Guatemala City"),
@@ -251,7 +251,7 @@ object ValidadorCapital {
         "vu" to listOf("Port Vila", "Puerto Vila"),
         "ws" to listOf("Apia"),
         "to" to listOf("Nukualofa", "Nuku'alofa"),
-        "ki" to listOf("Tarawa Sur", "Tarawa", "South Tarawa", "Bairiki"),
+        "ki" to listOf("Tarawa Sur", "South Tarawa"),
         "tv" to listOf("Funafuti"),
         "nr" to listOf("Yaren"),
         "mh" to listOf("Majuro"),
@@ -316,11 +316,36 @@ object ValidadorCapital {
         val entradaNorm = normalizar(entradaUsuario)
         if (entradaNorm.isBlank()) return false
 
+        // Exclusiones explícitas requeridas:
+        // - En Kiribati ("ki"), "Tarawa" sola NO es válida, solo "Tarawa Sur"
+        if (pais.codigo == "ki" && entradaNorm == "tarawa") {
+            return false
+        }
+        // - En Suiza ("ch"), "Bern" NO es válida, solo "Berna"
+        if (pais.codigo == "ch" && entradaNorm == "bern") {
+            return false
+        }
+        // - En Andorra ("ad"), "Andorra" sola NO es válida, solo "Andorra la Vieja" o "Andorra la Vella"
+        if (pais.codigo == "ad" && entradaNorm == "andorra") {
+            return false
+        }
+        // - En Estados Unidos ("us"), "Washington" sola NO es válida, solo "Washington DC" o "Washington D.C."
+        if (pais.codigo == "us" && entradaNorm == "washington") {
+            return false
+        }
+
         // 1. Verificar cada una de las partes de la cadena capital del país (separadas por "/")
         val partesCapital = pais.capital.split("/").map { normalizar(it) }
         for (parte in partesCapital) {
             if (parte == entradaNorm) {
                 return true
+            }
+            // Si la capital se llama "Ciudad de X", permitir también responder únicamente "X" (ej. Panamá o México)
+            if (parte.startsWith("ciudad de ")) {
+                val x = parte.removePrefix("ciudad de ").trim()
+                if (x.isNotEmpty() && x == entradaNorm) {
+                    return true
+                }
             }
         }
 
@@ -330,6 +355,13 @@ object ValidadorCapital {
             val vNorm = normalizar(v)
             if (vNorm == entradaNorm) {
                 return true
+            }
+            // Si la variante se llama "Ciudad de X", permitir también responder únicamente "X"
+            if (vNorm.startsWith("ciudad de ")) {
+                val x = vNorm.removePrefix("ciudad de ").trim()
+                if (x.isNotEmpty() && x == entradaNorm) {
+                    return true
+                }
             }
         }
 

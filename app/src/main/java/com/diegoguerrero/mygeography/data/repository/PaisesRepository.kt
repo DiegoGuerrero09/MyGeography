@@ -58,6 +58,12 @@ class PaisesRepository {
         }
     }
 
+    private fun esCandidatoValido(candidato: Pais, paisCorrecto: Pais, distractores: List<Pais>): Boolean {
+        if (candidato.codigo == paisCorrecto.codigo) return false
+        if (sonBanderasConfusas(candidato.codigo, paisCorrecto.codigo)) return false
+        return distractores.none { it.codigo == candidato.codigo || sonBanderasConfusas(it.codigo, candidato.codigo) }
+    }
+
     /**
      * Calcula la distancia geodésica ortodrómica en kilómetros entre dos países utilizando la fórmula de Haversine.
      */
@@ -99,11 +105,11 @@ class PaisesRepository {
         return preguntasBarajadas.mapIndexed { index, paisCorrecto ->
             val distractores = mutableListOf<Pais>()
             val candidatos = universo
-                .filter { it.codigo != paisCorrecto.codigo && !sonBanderasConfusas(it.codigo, paisCorrecto.codigo) }
+                .filter { esCandidatoValido(it, paisCorrecto, distractores) }
                 .shuffled()
 
             for (candidato in candidatos) {
-                if (distractores.none { sonBanderasConfusas(it.codigo, candidato.codigo) }) {
+                if (esCandidatoValido(candidato, paisCorrecto, distractores)) {
                     distractores.add(candidato)
                     if (distractores.size == 11) break
                 }
@@ -155,7 +161,25 @@ class PaisesRepository {
         }
     }
 
+    // Pares o tríos de banderas especialmente parecidas que deben aparecer juntas con prioridad en los tests
+    private val paresBanderasMuyParecidas: List<Set<String>> = listOf(
+        setOf("fm", "so"),       // Micronesia y Somalia (fondo azul celeste con estrella(s) blanca(s))
+        setOf("tw", "ws"),       // Taiwán y Samoa (fondo rojo con cantón azul y estrellas)
+        setOf("af", "sa"),       // Afganistán y Arabia Saudita (verde con shahada/emblemas)
+        setOf("co", "ec", "ve"), // Colombia, Ecuador, Venezuela
+        setOf("au", "nz"),       // Australia, Nueva Zelanda
+        setOf("hn", "sv", "ni"), // Honduras, El Salvador, Nicaragua
+        setOf("cu", "pr"),       // Cuba, Puerto Rico
+        setOf("tr", "tn"),       // Turquía, Túnez
+        setOf("at", "pe"),       // Austria, Perú
+        setOf("sn", "ml", "gn")  // Senegal, Malí, Guinea
+    )
+
     private val gruposBanderasSimilares: List<Set<String>> = listOf(
+        // Pares de banderas visualmente muy parecidas
+        setOf("fm", "so"),
+        setOf("tw", "ws"),
+        setOf("af", "sa"),
         // Cruz escandinava / nórdicos
         setOf("no", "se", "dk", "fi", "is", "ax", "fo"),
         // Cantón con Union Jack (británicas / commonwealth)
@@ -244,6 +268,7 @@ class PaisesRepository {
      * Genera el Test Mixto:
      * - 8 opciones de banderas parecidas (1 correcta + 7 distractores) en 4 filas y 2 columnas.
      * - Se priorizan banderas con diseño, simbología o colores similares y/o países cercanos por proximidad geográfica.
+     * - Se garantiza que nunca coincidan banderas iguales o confusas (como Noruega y Svalbard).
      */
     fun generarQuizMixto(
         region: RegionQuiz = RegionQuiz.GLOBAL,
@@ -257,26 +282,40 @@ class PaisesRepository {
         return preguntasBarajadas.mapIndexed { index, paisCorrecto ->
             val distractores = mutableListOf<Pais>()
 
-            // 1. Obtener candidatos con banderas similares según los grupos definidos
-            val similaresBrutos = gruposBanderasSimilares
+            // 0. Priorizar pares directos de banderas muy parecidas (Micronesia y Somalia, Taiwán y Samoa, Afganistán y Arabia Saudita, etc.)
+            val paresDirectos = paresBanderasMuyParecidas
                 .filter { paisCorrecto.codigo in it }
                 .flatMap { it }
                 .distinct()
                 .filter { it != paisCorrecto.codigo }
                 .mapNotNull { universoPorCodigo[it] }
-                .filter { perteneceARegion(it, region) && !sonBanderasConfusas(it.codigo, paisCorrecto.codigo) }
+                .filter { perteneceARegion(it, region) && esCandidatoValido(it, paisCorrecto, distractores) }
+                .shuffled()
 
-            // Ordenar similares por distancia geográfica para favorecer también afinidad territorial
-            val similaresOrdenados = similaresBrutos
-                .sortedBy { calcularDistanciaKm(paisCorrecto.codigo, it.codigo) }
-            val poolSimilares = similaresOrdenados.take(8).shuffled()
-
-            // Tomar hasta 4 banderas similares para dejar siempre hueco a países vecinos por proximidad
-            val numSimilares = minOf(poolSimilares.size, 4)
-            for (candidato in poolSimilares.take(numSimilares)) {
-                if (distractores.none { it.codigo == candidato.codigo || sonBanderasConfusas(it.codigo, candidato.codigo) }) {
+            for (candidato in paresDirectos) {
+                if (esCandidatoValido(candidato, paisCorrecto, distractores)) {
                     distractores.add(candidato)
                     if (distractores.size == 7) break
+                }
+            }
+
+            // 1. Obtener candidatos con banderas similares según los grupos definidos
+            if (distractores.size < 7) {
+                val similaresBrutos = gruposBanderasSimilares
+                    .filter { paisCorrecto.codigo in it }
+                    .flatMap { it }
+                    .distinct()
+                    .filter { it != paisCorrecto.codigo }
+                    .mapNotNull { universoPorCodigo[it] }
+                    .filter { perteneceARegion(it, region) && esCandidatoValido(it, paisCorrecto, distractores) }
+                    .shuffled()
+
+                val cupoSimilares = minOf(similaresBrutos.size, 4 - distractores.size).coerceAtLeast(0)
+                for (candidato in similaresBrutos.take(cupoSimilares)) {
+                    if (esCandidatoValido(candidato, paisCorrecto, distractores)) {
+                        distractores.add(candidato)
+                        if (distractores.size == 7) break
+                    }
                 }
             }
 
@@ -284,14 +323,13 @@ class PaisesRepository {
             val faltantes = 7 - distractores.size
             if (faltantes > 0) {
                 val candidatosCercanos = universo
-                    .filter { it.codigo != paisCorrecto.codigo && perteneceARegion(it, region) }
-                    .filter { candidato -> distractores.none { it.codigo == candidato.codigo || sonBanderasConfusas(it.codigo, candidato.codigo) } }
+                    .filter { perteneceARegion(it, region) && esCandidatoValido(it, paisCorrecto, distractores) }
                     .sortedBy { calcularDistanciaKm(paisCorrecto.codigo, it.codigo) }
 
-                // Tomar de entre los más cercanos (con margen de 12 para dinamismo y variedad) y barajar
+                // Tomar de entre los más cercanos (con margen para dinamismo y variedad) y barajar
                 val poolCercanos = candidatosCercanos.take(maxOf(faltantes * 2, 12)).shuffled()
                 for (candidato in poolCercanos) {
-                    if (distractores.none { it.codigo == candidato.codigo || sonBanderasConfusas(it.codigo, candidato.codigo) }) {
+                    if (esCandidatoValido(candidato, paisCorrecto, distractores)) {
                         distractores.add(candidato)
                         if (distractores.size == 7) break
                     }
@@ -301,12 +339,11 @@ class PaisesRepository {
             // 3. Si aún faltasen (ej. regiones pequeñas con pocos países), completar con cualquier restante
             if (distractores.size < 7) {
                 val resto = universo
-                    .filter { it.codigo != paisCorrecto.codigo && perteneceARegion(it, region) }
-                    .filter { candidato -> distractores.none { it.codigo == candidato.codigo || sonBanderasConfusas(it.codigo, candidato.codigo) } }
+                    .filter { perteneceARegion(it, region) && esCandidatoValido(it, paisCorrecto, distractores) }
                     .shuffled()
 
                 for (candidato in resto) {
-                    if (distractores.none { it.codigo == candidato.codigo || sonBanderasConfusas(it.codigo, candidato.codigo) }) {
+                    if (esCandidatoValido(candidato, paisCorrecto, distractores)) {
                         distractores.add(candidato)
                         if (distractores.size == 7) break
                     }
