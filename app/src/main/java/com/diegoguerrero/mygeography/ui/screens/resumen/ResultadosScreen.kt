@@ -2,6 +2,7 @@ package com.diegoguerrero.mygeography.ui.screens.resumen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -38,45 +39,69 @@ import com.diegoguerrero.mygeography.ui.components.BanderaImage
 import com.diegoguerrero.mygeography.ui.screens.quiz.TextoAjustable
 import com.diegoguerrero.mygeography.ui.theme.*
 
-private val codigosSudamerica = setOf(
-    "ar", "bo", "br", "cl", "co", "ec", "fk", "gf", "gy", "pe", "py", "sr", "uy", "ve"
-)
-
-private val codigosNorteamerica = setOf(
-    "ca", "us", "mx", "bm", "gl", "pm"
-)
-
-private val codigosAntartida = setOf(
-    "aq", "bv", "gs", "hm", "tf"
-)
-
 private enum class FiltroCategoriaResultados(val label: String) {
-    TODOS("Todos"),
-    INDEPENDIENTES("Independientes"),
-    DEPENDIENTES("Dependientes"),
+    GLOBAL("Global"),
     AFRICA("África"),
-    ANTARTIDA("Antártida"),
     ASIA("Asia"),
-    CENTROAMERICA("Centroamérica"),
     EUROPA("Europa"),
-    NORTEAMERICA("Norteamérica"),
+    NORTEAMERICA_CENTROAMERICA("Norteamérica & Centroamérica"),
     OCEANIA("Oceanía"),
-    SUDAMERICA("Sudamérica")
+    SUDAMERICA_ANTARTIDA("Sudamérica & Antártida"),
+    INDEPENDIENTES("Independientes"),
+    DEPENDIENTES("Dependientes")
 }
 
-private fun coincideCategoria(pais: Pais, filtro: FiltroCategoriaResultados): Boolean {
+private fun colorCategoriaResultados(cat: FiltroCategoriaResultados, regionQuiz: RegionQuiz = RegionQuiz.GLOBAL): Color {
+    return when (cat) {
+        FiltroCategoriaResultados.GLOBAL -> {
+            if (regionQuiz == RegionQuiz.GLOBAL) Color(0xFF94A3B8) else colorRegion(regionQuiz)
+        }
+        FiltroCategoriaResultados.AFRICA -> Color(0xFFF59E0B) // Ámbar cálido
+        FiltroCategoriaResultados.ASIA -> Color(0xFFEF4444)   // Rojo coral
+        FiltroCategoriaResultados.EUROPA -> Color(0xFF38BDF8) // Celeste
+        FiltroCategoriaResultados.NORTEAMERICA_CENTROAMERICA -> Color(0xFF06B6D4) // Cian brillante
+        FiltroCategoriaResultados.OCEANIA -> Color(0xFF10B981) // Verde esmeralda
+        FiltroCategoriaResultados.SUDAMERICA_ANTARTIDA -> Color(0xFFA855F7) // Púrpura brillante
+        FiltroCategoriaResultados.INDEPENDIENTES -> Color(0xFFFACC15) // Dorado soberano
+        FiltroCategoriaResultados.DEPENDIENTES -> Color(0xFFCBD5E1) // Gris territorio
+    }
+}
+
+private fun colorRegion(region: RegionQuiz): Color {
+    return when (region) {
+        RegionQuiz.GLOBAL -> Color(0xFF94A3B8)
+        RegionQuiz.EUROPA -> Color(0xFF38BDF8)
+        RegionQuiz.AFRICA -> Color(0xFFF59E0B)
+        RegionQuiz.ASIA -> Color(0xFFEF4444)
+        RegionQuiz.OCEANIA -> Color(0xFF10B981)
+        RegionQuiz.SUDAMERICA_ANTARTIDA -> Color(0xFFA855F7)
+        RegionQuiz.NORTEAMERICA_CENTROAMERICA -> Color(0xFF06B6D4)
+    }
+}
+
+private fun coincideCategoria(
+    pais: Pais,
+    filtro: FiltroCategoriaResultados,
+    repository: PaisesRepository
+): Boolean {
     return when (filtro) {
-        FiltroCategoriaResultados.TODOS -> true
+        FiltroCategoriaResultados.GLOBAL -> true
+        FiltroCategoriaResultados.AFRICA -> repository.perteneceARegion(pais, RegionQuiz.AFRICA)
+        FiltroCategoriaResultados.ASIA -> repository.perteneceARegion(pais, RegionQuiz.ASIA)
+        FiltroCategoriaResultados.EUROPA -> repository.perteneceARegion(pais, RegionQuiz.EUROPA)
+        FiltroCategoriaResultados.NORTEAMERICA_CENTROAMERICA -> repository.perteneceARegion(pais, RegionQuiz.NORTEAMERICA_CENTROAMERICA)
+        FiltroCategoriaResultados.OCEANIA -> repository.perteneceARegion(pais, RegionQuiz.OCEANIA)
+        FiltroCategoriaResultados.SUDAMERICA_ANTARTIDA -> repository.perteneceARegion(pais, RegionQuiz.SUDAMERICA_ANTARTIDA)
         FiltroCategoriaResultados.INDEPENDIENTES -> pais.esSoberano
         FiltroCategoriaResultados.DEPENDIENTES -> !pais.esSoberano
-        FiltroCategoriaResultados.EUROPA -> pais.continente == Continente.EUROPA
-        FiltroCategoriaResultados.NORTEAMERICA -> pais.codigo in codigosNorteamerica
-        FiltroCategoriaResultados.CENTROAMERICA -> pais.continente == Continente.AMERICA && pais.codigo !in codigosNorteamerica && pais.codigo !in codigosSudamerica
-        FiltroCategoriaResultados.SUDAMERICA -> pais.codigo in codigosSudamerica
-        FiltroCategoriaResultados.ASIA -> pais.continente == Continente.ASIA
-        FiltroCategoriaResultados.AFRICA -> pais.continente == Continente.AFRICA
-        FiltroCategoriaResultados.OCEANIA -> pais.continente == Continente.OCEANIA
-        FiltroCategoriaResultados.ANTARTIDA -> pais.codigo in codigosAntartida || pais.continente == Continente.ANTARTIDA
+    }
+}
+
+private fun textoBotonCategoria(cat: FiltroCategoriaResultados, region: RegionQuiz): String {
+    return if (cat == FiltroCategoriaResultados.GLOBAL && region != RegionQuiz.GLOBAL) {
+        "Todos"
+    } else {
+        cat.label
     }
 }
 
@@ -96,7 +121,7 @@ fun ResultadosScreen(
     onVolverAlMenu: () -> Unit,
     onReiniciarQuiz: () -> Unit
 ) {
-    var filtroCategoria by remember { mutableStateOf(FiltroCategoriaResultados.TODOS) }
+    var filtroCategoria by remember { mutableStateOf(FiltroCategoriaResultados.GLOBAL) }
     var filtroSeleccionado by remember { mutableStateOf(FiltroResultados.TODAS) }
 
     val totalGlobal = respuestas.size
@@ -131,10 +156,20 @@ fun ResultadosScreen(
     // Si no es global, solo por dependientes e independientes.
     val categoriasDisponibles = remember(region) {
         if (region == RegionQuiz.GLOBAL) {
-            FiltroCategoriaResultados.values().toList()
+            listOf(
+                FiltroCategoriaResultados.GLOBAL,
+                FiltroCategoriaResultados.AFRICA,
+                FiltroCategoriaResultados.ASIA,
+                FiltroCategoriaResultados.EUROPA,
+                FiltroCategoriaResultados.NORTEAMERICA_CENTROAMERICA,
+                FiltroCategoriaResultados.OCEANIA,
+                FiltroCategoriaResultados.SUDAMERICA_ANTARTIDA,
+                FiltroCategoriaResultados.INDEPENDIENTES,
+                FiltroCategoriaResultados.DEPENDIENTES
+            )
         } else {
             listOf(
-                FiltroCategoriaResultados.TODOS,
+                FiltroCategoriaResultados.GLOBAL,
                 FiltroCategoriaResultados.INDEPENDIENTES,
                 FiltroCategoriaResultados.DEPENDIENTES
             )
@@ -143,7 +178,7 @@ fun ResultadosScreen(
 
     // Filtrar respuestas por la categoría seleccionada
     val respuestasPorCategoria = remember(filtroCategoria, respuestas) {
-        respuestas.filter { coincideCategoria(it.pregunta.paisCorrecto, filtroCategoria) }
+        respuestas.filter { coincideCategoria(it.pregunta.paisCorrecto, filtroCategoria, repository) }
     }
 
     val totalCategoria = respuestasPorCategoria.size
@@ -242,6 +277,7 @@ fun ResultadosScreen(
                 CardResumenGeneral(
                     tipoQuiz = tipoQuiz,
                     region = region,
+                    categoriaSeleccionada = filtroCategoria,
                     total = totalCategoria,
                     acertadas = acertadasCategoria,
                     falladas = falladasCategoria,
@@ -251,39 +287,37 @@ fun ResultadosScreen(
                 )
             }
 
-            // Chips horizontales de categorías (continentes, dependientes, independientes)
+            // Selectores horizontales de categorías (continentes y soberanía)
             item {
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     items(categoriasDisponibles) { cat ->
-                        val count = respuestas.count { coincideCategoria(it.pregunta.paisCorrecto, cat) }
                         val esActivo = cat == filtroCategoria
-                        FilterChip(
-                            selected = esActivo,
-                            onClick = { filtroCategoria = cat },
-                            label = {
-                                Text(
-                                    text = "${cat.label} ($count)",
-                                    fontSize = 12.sp,
-                                    fontWeight = if (esActivo) FontWeight.Bold else FontWeight.Normal
+                        val colorCat = colorCategoriaResultados(cat, region)
+                        val textoBoton = textoBotonCategoria(cat, region)
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (esActivo) colorCat.copy(alpha = 0.28f) else Color(0xFF0F172A))
+                                .border(
+                                    width = if (esActivo) 1.5.dp else 1.dp,
+                                    color = if (esActivo) colorCat else colorCat.copy(alpha = 0.55f),
+                                    shape = RoundedCornerShape(8.dp)
                                 )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                containerColor = DarkCard,
-                                labelColor = TextSecondary,
-                                selectedContainerColor = colorTema,
-                                selectedLabelColor = if (tipoQuiz == TipoQuiz.MIXTO) Color.White else DarkBackground
-                            ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                borderColor = if (esActivo) colorTema else DarkCardBorder,
-                                selectedBorderColor = colorTema,
-                                enabled = true,
-                                selected = esActivo
-                            ),
-                            shape = RoundedCornerShape(10.dp)
-                        )
+                                .clickable { filtroCategoria = cat }
+                                .padding(horizontal = 9.dp, vertical = 5.dp)
+                        ) {
+                            Text(
+                                text = textoBoton,
+                                color = if (esActivo) colorCat else Color(0xFFE2E8F0),
+                                fontSize = 12.sp,
+                                fontWeight = if (esActivo) FontWeight.ExtraBold else FontWeight.Medium,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             }
@@ -439,6 +473,7 @@ fun ResultadosScreen(
 private fun CardResumenGeneral(
     tipoQuiz: TipoQuiz,
     region: RegionQuiz,
+    categoriaSeleccionada: FiltroCategoriaResultados = FiltroCategoriaResultados.GLOBAL,
     total: Int,
     acertadas: Int,
     falladas: Int,
@@ -448,10 +483,15 @@ private fun CardResumenGeneral(
 ) {
     val shape = RoundedCornerShape(20.dp)
     val tituloModo = if (region == RegionQuiz.GLOBAL) {
-        when (tipoQuiz) {
+        val base = when (tipoQuiz) {
             TipoQuiz.BANDERAS -> "Test de banderas"
             TipoQuiz.CAPITALES -> "Test de capitales"
             TipoQuiz.MIXTO -> "Test mixto"
+        }
+        if (categoriaSeleccionada != FiltroCategoriaResultados.GLOBAL) {
+            "$base • ${categoriaSeleccionada.label}"
+        } else {
+            base
         }
     } else {
         val base = when (tipoQuiz) {
@@ -459,13 +499,23 @@ private fun CardResumenGeneral(
             TipoQuiz.CAPITALES -> "Test de capitales"
             TipoQuiz.MIXTO -> "Test mixto"
         }
-        "$base • ${region.nombre}"
+        if (categoriaSeleccionada != FiltroCategoriaResultados.GLOBAL) {
+            "$base • ${region.nombre} (${categoriaSeleccionada.label})"
+        } else {
+            "$base • ${region.nombre}"
+        }
     }
 
-    val colorTemaCard = when (tipoQuiz) {
-        TipoQuiz.BANDERAS -> PrimaryBlue
-        TipoQuiz.CAPITALES -> AccentGold
-        TipoQuiz.MIXTO -> Color(0xFFEF4444)
+    val colorTemaCard = if (categoriaSeleccionada != FiltroCategoriaResultados.GLOBAL) {
+        colorCategoriaResultados(categoriaSeleccionada, region)
+    } else if (region != RegionQuiz.GLOBAL) {
+        colorRegion(region)
+    } else {
+        when (tipoQuiz) {
+            TipoQuiz.BANDERAS -> PrimaryBlue
+            TipoQuiz.CAPITALES -> AccentGold
+            TipoQuiz.MIXTO -> Color(0xFFEF4444)
+        }
     }
 
     Card(

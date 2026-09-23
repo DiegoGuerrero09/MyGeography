@@ -73,9 +73,9 @@ Al pulsar sobre cualquiera de los modos de juego, la aplicación despliega un di
 ### 6. 📊 Resumen del test, filtros y desglose de fallos
 - Pantalla de resumen detallado con recálculo dinámico de métricas:
   - Tarjeta de resumen con gran porcentaje, aciertos y fallos.
-  - **Filtro por categorías:** Chips horizontales para filtrar resultados totales, aciertos y fallos:
-    - En tests globales: por continente (*Europa*, *Norteamérica*, *Centroamérica*, *Sudamérica*, *Asia*, *África*, *Oceanía*, *Antártida*) y soberanía (*Independientes*, *Dependientes*).
-    - En tests regionales: por *Independientes* y *Dependientes*.
+  - **Filtro por categorías:** Selectores horizontales consistentes con el diseño, colores y agrupaciones de Puntuaciones:
+    - En tests globales: por ámbito (*Global*, *África*, *Asia*, *Europa*, *Norteamérica & Centroamérica*, *Oceanía*, *Sudamérica & Antártida*) con sus colores distintivos y soberanía (*Independientes*, *Dependientes*).
+    - En tests regionales: por *Todos*, *Independientes* y *Dependientes*.
   - **Filtro por tipo de fallo en Test Mixto:** Estructura idéntica y simétrica a los otros tests con pestañas dedicadas:
     - `Todas`, `Acertadas`, `Falladas`
     - Subpestañas de fallos: `Todos los fallos`, `F. Bandera`, `F. Capital`
