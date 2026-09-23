@@ -533,78 +533,43 @@ private fun CabeceraPregunta(
             }
 
             TipoQuiz.MIXTO -> {
-                if (modoCompacto) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 2.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "BANDERA Y CAPITAL DE",
-                            color = Color(0xFFEF4444),
-                            fontSize = 8.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.8.sp,
-                            maxLines = 1
-                        )
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            TextoAjustable(
-                                texto = pregunta.paisCorrecto.nombre,
-                                modifier = Modifier.weight(1f, fill = false),
-                                color = TextPrimary,
-                                fontWeight = FontWeight.ExtraBold,
-                                textAlign = TextAlign.Center,
-                                baseSize = 14
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "•  ${pregunta.paisCorrecto.continente.nombre}",
-                                color = TextMuted,
-                                fontSize = 10.5.sp,
-                                fontWeight = FontWeight.Medium,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        }
-                    }
-                } else {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 7.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "BANDERA Y CAPITAL DE",
-                            color = Color(0xFFEF4444),
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
-                        )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = 12.dp,
+                            vertical = if (modoCompacto) 4.dp else 7.dp
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "BANDERA Y CAPITAL DE",
+                        color = Color(0xFFEF4444),
+                        fontSize = if (modoCompacto) 9.sp else 10.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                        textAlign = TextAlign.Center
+                    )
 
-                        Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(if (modoCompacto) 1.dp else 2.dp))
 
-                        TextoAjustable(
-                            texto = pregunta.paisCorrecto.nombre,
-                            color = TextPrimary,
-                            fontWeight = FontWeight.ExtraBold,
-                            textAlign = TextAlign.Center,
-                            baseSize = 18
-                        )
+                    TextoAjustable(
+                        texto = pregunta.paisCorrecto.nombre,
+                        color = TextPrimary,
+                        fontWeight = FontWeight.ExtraBold,
+                        textAlign = TextAlign.Center,
+                        baseSize = if (modoCompacto) 15 else 18
+                    )
 
-                        Spacer(modifier = Modifier.height(1.dp))
+                    Spacer(modifier = Modifier.height(1.dp))
 
-                        Text(
-                            text = pregunta.paisCorrecto.continente.nombre,
-                            color = TextMuted,
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                    Text(
+                        text = pregunta.paisCorrecto.continente.nombre,
+                        color = TextMuted,
+                        fontSize = if (modoCompacto) 9.5.sp else 10.5.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }

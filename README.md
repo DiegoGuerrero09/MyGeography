@@ -39,16 +39,19 @@ Al pulsar sobre cualquiera de los modos de juego, la aplicación despliega un di
 
 ### 4. 🔀 Test mixto (254 países • Bandera + Capital)
 - Nuevo modo accesible desde el menú principal con **borde rojo distintivo (`#EF4444`)** y etiqueta indicativa `254 PAÍSES`.
-- Presenta el nombre del país en la cabecera y una cuadrícula de **8 banderas parecidas en 4 filas y 2 columnas** (1 correcta y 7 distractores elegidos inteligentemente por familias visuales o geográficas: escandinavas, stanes, crucíferas británicas, tricolores eslavas, africanas, árabes, etc.).
-- **Mecánica de evaluación en dos fases:**
-  1. **Selección de bandera:** El usuario debe elegir primero la bandera. Si falla, se contabiliza de inmediato como error en bandera y se revela la capital correcta.
-  2. **Escritura de capital:** Si acierta la bandera, se activa automáticamente la caja de texto para escribir el nombre de la capital.
+- **Cabecera estilizada de 3 líneas:** Muestra arriba en color rojo la etiqueta `BANDERA Y CAPITAL DE`, en el centro el nombre del país (con ajuste dinámico de tamaño) y abajo el continente, todo perfectamente centrado verticalmente.
+- Cuadrícula de **8 banderas parecidas en 4 filas y 2 columnas** (1 correcta y 7 distractores seleccionados inteligentemente por familias visuales y cercanía geográfica: escandinavas, stanes, crucíferas británicas, tricolores eslavas, africanas, árabes, etc.).
+- **Mecánica ágil de evaluación en dos fases:**
+  1. **Selección de bandera:** El usuario elige primero la bandera con indicador `Elige una bandera...`. Si falla, se contabiliza de inmediato como error en bandera y se revela la capital correcta.
+  2. **Escritura de capital:** Al acertar la bandera, el test pasa de forma automática e inmediata a la caja de texto de la capital, sin necesidad de pulsar ningún botón adicional de comprobación.
+- **Campo de capital estilizado:** Caja de texto con elegante reborde celeste, compatible con la apertura del teclado virtual manteniendo en todo momento accesibles los botones de navegación y rendirse.
 - **Validador inteligente de capitales (`ValidadorCapital`):**
   - Insensible a mayúsculas, minúsculas, tildes (p. ej. *Valparaiso* por *Valparaíso*) y espacios sobrantes.
   - Admite sustitución de caracteres nórdicos o especiales (p. ej. *O* por *Ø* en Tórshavn, *C* por *Ç* en Curazao/Curaçao) y guiones por espacios.
-  - Permite nombres internacionales y en inglés comunes (p. ej. *Dakar* en lugar de *Dacar*, *Beijing* por *Pekín*).
+  - Valida nombres compuestos con sus espacios correspondientes (p. ej. *Pago Pago*) y formas internacionales comunes (p. ej. *Dakar* en lugar de *Dacar*, *Beijing* por *Pekín*).
   - En países con múltiples capitales oficiales (Sudáfrica, Bolivia, Países Bajos, etc.), se valida como correcta cualquiera de ellas y se muestran las alternativas.
-- Botón de **Rendirse** que permite avanzar mostrando la capital correcta si no se recuerda, contando como fallo en capital.
+- **Botón de Rendirse:** Centrado verticalmente con icono y texto en una sola línea; permite avanzar mostrando la capital correcta si no se recuerda, contando como fallo en capital.
+- **Datos geográficos actualizados:** Capital de Kiribati actualizada a *Tarawa Sur*.
 - **Cascada de estadísticas:** Al alcanzar un porcentaje en el Test Mixto, las puntuaciones de Banderas y Capitales se elevan automáticamente a dicho porcentaje como mínimo.
 
 ### 5. 🌐 Globo terráqueo 3D interactivo
@@ -73,13 +76,14 @@ Al pulsar sobre cualquiera de los modos de juego, la aplicación despliega un di
 ### 6. 📊 Resumen del test, filtros y desglose de fallos
 - Pantalla de resumen detallado con recálculo dinámico de métricas:
   - Tarjeta de resumen con gran porcentaje, aciertos y fallos.
-  - **Filtro por categorías:** Selectores horizontales consistentes con el diseño, colores y agrupaciones de Puntuaciones:
-    - En tests globales: por ámbito (*Global*, *África*, *Asia*, *Europa*, *Norteamérica & Centroamérica*, *Oceanía*, *Sudamérica & Antártida*) con sus colores distintivos y soberanía (*Independientes*, *Dependientes*).
+  - **Filtro por categorías ordenado prioritariamente:**
+    - En tests globales: *Global*, seguido inmediatamente por *Independientes* (Dorado) y *Dependientes* (Gris), y a continuación los continentes (*África*, *Asia*, *Europa*, *Norteamérica & Centroamérica*, *Oceanía*, *Sudamérica & Antártida*) con su paleta de colores unificada.
     - En tests regionales: por *Todos*, *Independientes* y *Dependientes*.
   - **Filtro por tipo de fallo en Test Mixto:** Estructura idéntica y simétrica a los otros tests con pestañas dedicadas:
     - `Todas`, `Acertadas`, `Falladas`
-    - Subpestañas de fallos: `Todos los fallos`, `F. Bandera`, `F. Capital`
-    - Desglose visual en el resumen con cajas independientes de **Fallos de bandera** y **Fallos de capital** (con fondo oscuro integrado, sin fondo rojo).
+    - Subpestañas de fallos: `Todos los fallos`, `Fallos de bandera`, `Fallos de capital`
+    - Cajas de fallos de bandera y de capital integradas sin fondos rojos estridentes.
+  - **Mensajes de felicitación adaptables:** Textos *"¡Excelente! No cometiste ningún fallo en las banderas."* y *"¡Excelente! No cometiste ningún fallo en las capitales."* con autoajuste de tipografía garantizando siempre una sola línea.
   - Detalle individual de cada respuesta con estado, bandera elegida y capital escrita/correcta.
   - **Propagación de récords:** Al completar un test global, se calculan y actualizan automáticamente las puntuaciones para cada continente.
 - **Apartado de estadísticas:** Tarjeta de 3 columnas en menú principal para consultar récords de Banderas, Capitales y Mixto en todos los ámbitos.
@@ -88,12 +92,13 @@ Al pulsar sobre cualquiera de los modos de juego, la aplicación despliega un di
 - Atlas con las 254 naciones ordenadas alfabéticamente en español (incluyendo *República Democrática del Congo*).
 - **Ajuste automático de tipografía (`NombrePaisAutoAjustable`, `CapitalAutoAjustable` y `DependienteDeAutoAjustable`):** Mide dinámicamente el ancho y reduce el tamaño de letra para que jamás se corte ningún texto de dependencias ni nombres largos.
 - Buscador en tiempo real por nombre de país, capital o código ISO.
-- Distinción regional detallada: **Norteamérica** (Cian), **Centroamérica** (Verde lima tropical `#84CC16`), **Sudamérica** (Púrpura), etc.
+- **Consistencia cromática total:** Filtros y badges de región y soberanía con los mismos tonos que el menú principal (África en ámbar cálido, Europa en celeste, Asia en rojo coral, etc.).
 - Badges uniformes de estado (**Soberano/Territorio**) y región.
 - Filtros rápidos por continente y grado de soberanía.
 
 ### 8. 🎨 Interfaz responsiva y menú principal
 - Menú principal responsivo con los 5 bloques expandidos uniformemente ocupando la pantalla completa.
+- Diálogo de confirmación para salir del test con botón **Continuar** destacado en azul brillante para máxima visibilidad.
 - Iconografía clara y tema oscuro moderno (*Dark Geography*).
 - 100% Offline sin dependencias externas en tiempo de ejecución.
 
