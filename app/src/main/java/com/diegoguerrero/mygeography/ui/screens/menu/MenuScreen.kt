@@ -161,7 +161,7 @@ fun MenuScreen(
             onClick = { tipoQuizSeleccionadoParaDialogo = TipoQuiz.BANDERAS },
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .weight(0.95f)
         )
 
         // Botón Grande 2: Capitales (254 Países) - Expandido
@@ -176,7 +176,7 @@ fun MenuScreen(
             onClick = { tipoQuizSeleccionadoParaDialogo = TipoQuiz.CAPITALES },
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .weight(0.95f)
         )
 
         // Botón Grande 3: Test Mixto (254 Países) - Borde rojo
@@ -192,7 +192,7 @@ fun MenuScreen(
             onClick = { tipoQuizSeleccionadoParaDialogo = TipoQuiz.MIXTO },
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .weight(0.95f)
         )
 
         // Botón 4: Listado de países - Con reborde verde, franja LISTADO y expandido
@@ -200,7 +200,7 @@ fun MenuScreen(
             onClick = onAbrirListado,
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .weight(0.95f)
         )
 
         // Botón 5: Mini apartado de estadísticas con selector regional - Expandido
@@ -208,7 +208,7 @@ fun MenuScreen(
             statsManager = statsManager,
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .weight(1.20f)
         )
     }
 }
@@ -249,7 +249,7 @@ private fun BotonModoPrincipal(
                             listOf(colorGradienteInicio, colorGradienteFin)
                         )
                     )
-                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .padding(horizontal = 14.dp, vertical = 7.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -259,7 +259,7 @@ private fun BotonModoPrincipal(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(30.dp)
                                 .clip(CircleShape)
                                 .background(Color.White.copy(alpha = 0.2f)),
                             contentAlignment = Alignment.Center
@@ -268,14 +268,14 @@ private fun BotonModoPrincipal(
                                 imageVector = icono,
                                 contentDescription = null,
                                 tint = Color.White,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(17.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(9.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = subtitulo,
                             color = Color.White,
-                            fontSize = 15.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp
                         )
@@ -285,7 +285,7 @@ private fun BotonModoPrincipal(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = "Entrar",
                         tint = Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
@@ -295,21 +295,21 @@ private fun BotonModoPrincipal(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                    .padding(horizontal = 16.dp, vertical = 7.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
                 Column(verticalArrangement = Arrangement.Center) {
                     Text(
                         text = titulo,
                         color = TextPrimary,
-                        fontSize = 25.sp,
+                        fontSize = 23.5.sp,
                         fontWeight = FontWeight.ExtraBold
                     )
-                    Spacer(modifier = Modifier.height(3.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = descripcion,
                         color = TextSecondary,
-                        fontSize = 16.5.sp
+                        fontSize = 15.sp
                     )
                 }
             }
@@ -346,7 +346,7 @@ private fun BotonListadoPaises(
                             listOf(Color(0xFF059669), Color(0xFF047857))
                         )
                     )
-                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .padding(horizontal = 14.dp, vertical = 7.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -356,7 +356,7 @@ private fun BotonListadoPaises(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(30.dp)
                                 .clip(CircleShape)
                                 .background(Color.White.copy(alpha = 0.2f)),
                             contentAlignment = Alignment.Center
@@ -365,14 +365,14 @@ private fun BotonListadoPaises(
                                 imageVector = Icons.Default.FormatListNumbered,
                                 contentDescription = null,
                                 tint = Color.White,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(17.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(9.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "LISTADO",
                             color = Color.White,
-                            fontSize = 15.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp
                         )
@@ -382,7 +382,7 @@ private fun BotonListadoPaises(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = "Entrar",
                         tint = Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
@@ -392,21 +392,21 @@ private fun BotonListadoPaises(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                    .padding(horizontal = 16.dp, vertical = 7.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
                 Column(verticalArrangement = Arrangement.Center) {
                     Text(
                         text = "Listado de países",
                         color = TextPrimary,
-                        fontSize = 25.sp,
+                        fontSize = 23.5.sp,
                         fontWeight = FontWeight.ExtraBold
                     )
-                    Spacer(modifier = Modifier.height(3.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "País • Capital • Bandera",
                         color = TextSecondary,
-                        fontSize = 16.5.sp
+                        fontSize = 15.sp
                     )
                 }
             }
@@ -446,7 +446,7 @@ private fun CardEstadisticasConRegiones(
                             listOf(Color(0xFFCA8A04), Color(0xFFA16207))
                         )
                     )
-                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .padding(horizontal = 14.dp, vertical = 7.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -456,7 +456,7 @@ private fun CardEstadisticasConRegiones(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(30.dp)
                                 .clip(CircleShape)
                                 .background(Color.White.copy(alpha = 0.2f)),
                             contentAlignment = Alignment.Center
@@ -465,14 +465,14 @@ private fun CardEstadisticasConRegiones(
                                 imageVector = Icons.Default.Leaderboard,
                                 contentDescription = null,
                                 tint = Color.White,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(17.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(9.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "PUNTUACIONES",
                             color = Color.White,
-                            fontSize = 15.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp
                         )
@@ -482,18 +482,18 @@ private fun CardEstadisticasConRegiones(
                         imageVector = Icons.Default.EmojiEvents,
                         contentDescription = null,
                         tint = Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
 
-            // Cuerpo con selectores de continente y porcentajes
+            // Cuerpo con selectores de continente y porcentajes separados verticalmente
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.SpaceEvenly
+                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                verticalArrangement = Arrangement.Center
             ) {
                 // Selector horizontal de ámbitos / continentes
                 LazyRow(
@@ -534,6 +534,8 @@ private fun CardEstadisticasConRegiones(
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(9.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
