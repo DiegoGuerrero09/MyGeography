@@ -20,5 +20,12 @@ class EstadisticasManager(context: Context) {
         if (porcentaje > actual) {
             prefs.edit().putInt(clave, porcentaje).apply()
         }
+
+        // Si se completa el test mixto a un porcentaje determinado,
+        // actualizar banderas y capitales para que estén al menos a ese porcentaje
+        if (tipo == TipoQuiz.MIXTO) {
+            guardarPorcentaje(TipoQuiz.BANDERAS, region, porcentaje)
+            guardarPorcentaje(TipoQuiz.CAPITALES, region, porcentaje)
+        }
     }
 }

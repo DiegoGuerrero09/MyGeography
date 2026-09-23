@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.FormatListNumbered
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -42,6 +43,7 @@ import com.diegoguerrero.mygeography.ui.theme.*
 fun MenuScreen(
     onIniciarQuizBanderas: (RegionQuiz, Boolean) -> Unit,
     onIniciarQuizCapitales: (RegionQuiz, Boolean) -> Unit,
+    onIniciarQuizMixto: (RegionQuiz, Boolean) -> Unit,
     onAbrirListado: () -> Unit,
     onAbrirGlobo: () -> Unit
 ) {
@@ -56,10 +58,10 @@ fun MenuScreen(
             tipoQuiz = tipo,
             onSeleccionarRegion = { region, incluirDependientes ->
                 tipoQuizSeleccionadoParaDialogo = null
-                if (tipo == TipoQuiz.BANDERAS) {
-                    onIniciarQuizBanderas(region, incluirDependientes)
-                } else {
-                    onIniciarQuizCapitales(region, incluirDependientes)
+                when (tipo) {
+                    TipoQuiz.BANDERAS -> onIniciarQuizBanderas(region, incluirDependientes)
+                    TipoQuiz.CAPITALES -> onIniciarQuizCapitales(region, incluirDependientes)
+                    TipoQuiz.MIXTO -> onIniciarQuizMixto(region, incluirDependientes)
                 }
             },
             onDismiss = { tipoQuizSeleccionadoParaDialogo = null }
@@ -177,7 +179,23 @@ fun MenuScreen(
                 .weight(1f)
         )
 
-        // Botón 3: Listado de países - Con reborde verde, franja LISTADO y expandido
+        // Botón Grande 3: Test Mixto (254 Países) - Borde rojo
+        BotonModoPrincipal(
+            titulo = "Test mixto",
+            subtitulo = "254 PAÍSES",
+            descripcion = "Bandera y capital del país",
+            icono = Icons.Default.Quiz,
+            colorGradienteInicio = Color(0xFFDC2626),
+            colorGradienteFin = Color(0xFFB91C1C),
+            colorAcento = Color(0xFFEF4444),
+            bordeColor = Color(0xFFEF4444),
+            onClick = { tipoQuizSeleccionadoParaDialogo = TipoQuiz.MIXTO },
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        )
+
+        // Botón 4: Listado de países - Con reborde verde, franja LISTADO y expandido
         BotonListadoPaises(
             onClick = onAbrirListado,
             modifier = Modifier
@@ -185,7 +203,7 @@ fun MenuScreen(
                 .weight(1f)
         )
 
-        // Botón 4: Mini apartado de estadísticas con selector regional - Expandido
+        // Botón 5: Mini apartado de estadísticas con selector regional - Expandido
         CardEstadisticasConRegiones(
             statsManager = statsManager,
             modifier = Modifier
@@ -205,7 +223,8 @@ private fun BotonModoPrincipal(
     colorGradienteFin: Color,
     colorAcento: Color,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    bordeColor: Color? = null
 ) {
     val shape = RoundedCornerShape(16.dp)
 
@@ -213,7 +232,7 @@ private fun BotonModoPrincipal(
         modifier = modifier
             .shadow(4.dp, shape)
             .clip(shape)
-            .border(1.2.dp, colorAcento.copy(alpha = 0.4f), shape)
+            .border(1.5.dp, bordeColor ?: colorAcento.copy(alpha = 0.4f), shape)
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
         shape = shape
@@ -403,6 +422,7 @@ private fun CardEstadisticasConRegiones(
     var regionSeleccionada by remember { mutableStateOf(RegionQuiz.GLOBAL) }
     val mejorBanderas = statsManager.obtenerMejorPorcentaje(TipoQuiz.BANDERAS, regionSeleccionada)
     val mejorCapitales = statsManager.obtenerMejorPorcentaje(TipoQuiz.CAPITALES, regionSeleccionada)
+    val mejorMixto = statsManager.obtenerMejorPorcentaje(TipoQuiz.MIXTO, regionSeleccionada)
     val shape = RoundedCornerShape(16.dp)
     val colorAmarilloAcento = Color(0xFFEAB308) // Amarillo/Oro
 
@@ -517,7 +537,7 @@ private fun CardEstadisticasConRegiones(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     // Estadísticas Banderas
                     Row(
@@ -525,21 +545,23 @@ private fun CardEstadisticasConRegiones(
                             .weight(1f)
                             .clip(RoundedCornerShape(8.dp))
                             .background(Color(0xFF0F172A))
-                            .padding(horizontal = 12.dp, vertical = 7.dp),
+                            .padding(horizontal = 6.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
                             text = "Banderas",
                             color = TextSecondary,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1
                         )
                         Text(
                             text = if (mejorBanderas >= 0) "$mejorBanderas%" else "-",
                             color = if (mejorBanderas >= 0) PrimaryBlue else TextMuted,
-                            fontSize = 19.sp,
-                            fontWeight = FontWeight.ExtraBold
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1
                         )
                     }
 
@@ -549,21 +571,49 @@ private fun CardEstadisticasConRegiones(
                             .weight(1f)
                             .clip(RoundedCornerShape(8.dp))
                             .background(Color(0xFF0F172A))
-                            .padding(horizontal = 12.dp, vertical = 7.dp),
+                            .padding(horizontal = 6.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
                             text = "Capitales",
                             color = TextSecondary,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1
                         )
                         Text(
                             text = if (mejorCapitales >= 0) "$mejorCapitales%" else "-",
                             color = if (mejorCapitales >= 0) AccentGold else TextMuted,
-                            fontSize = 19.sp,
-                            fontWeight = FontWeight.ExtraBold
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1
+                        )
+                    }
+
+                    // Estadísticas Mixto
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF0F172A))
+                            .padding(horizontal = 6.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Mixto",
+                            color = TextSecondary,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1
+                        )
+                        Text(
+                            text = if (mejorMixto >= 0) "$mejorMixto%" else "-",
+                            color = if (mejorMixto >= 0) Color(0xFFEF4444) else TextMuted,
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1
                         )
                     }
                 }
@@ -582,7 +632,11 @@ private fun DialogoSeleccionRegion(
     onSeleccionarRegion: (RegionQuiz, Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val tituloModo = if (tipoQuiz == TipoQuiz.BANDERAS) "Test de banderas" else "Test de capitales"
+    val tituloModo = when (tipoQuiz) {
+        TipoQuiz.BANDERAS -> "Test de banderas"
+        TipoQuiz.CAPITALES -> "Test de capitales"
+        TipoQuiz.MIXTO -> "Test mixto"
+    }
     val regionesOrdenadas = remember {
         listOf(RegionQuiz.GLOBAL) + RegionQuiz.values().filter { it != RegionQuiz.GLOBAL }.sortedBy { it.nombre }
     }

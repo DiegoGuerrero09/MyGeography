@@ -79,6 +79,10 @@ fun MainAppNavigation(quizViewModel: QuizViewModel) {
                     quizViewModel.iniciarQuiz(TipoQuiz.CAPITALES, region, incluirDependientes)
                     navController.navigate(Screen.Quiz.route)
                 },
+                onIniciarQuizMixto = { region, incluirDependientes ->
+                    quizViewModel.iniciarQuiz(TipoQuiz.MIXTO, region, incluirDependientes)
+                    navController.navigate(Screen.Quiz.route)
+                },
                 onAbrirListado = {
                     navController.navigate(Screen.Listado.route)
                 },

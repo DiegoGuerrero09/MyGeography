@@ -1,13 +1,13 @@
 # 🌍 MyGeography
 
-**MyGeography** es una aplicación moderna para Android desarrollada con **Kotlin** y **Jetpack Compose** orientada a aprender, practicar y poner a prueba conocimientos de geografía mundial: banderas, capitales, estadísticas regionales y atlas de naciones.
+**MyGeography** (v1.2.0) es una aplicación moderna para Android desarrollada con **Kotlin** y **Jetpack Compose** orientada a aprender, practicar y poner a prueba conocimientos de geografía mundial: banderas, capitales, modo mixto, estadísticas regionales, filtros analíticos y atlas de naciones.
 
 ---
 
 ## ✨ Características Principales
 
 ### 1. 🌐 Ámbito de Juego: Global o por Continentes
-Al pulsar sobre cualquiera de los dos modos de juego, la aplicación despliega un diálogo limpio y directo para elegir el ámbito del test:
+Al pulsar sobre cualquiera de los modos de juego, la aplicación despliega un diálogo limpio y directo para elegir el ámbito del test:
 - 🌐 **Global** (todas las naciones del modo seleccionado)
 - 🇪🇺 **Europa**
 - 🌍 **África**
@@ -27,17 +27,31 @@ Al pulsar sobre cualquiera de los dos modos de juego, la aplicación despliega u
   - Se ilumina en **verde** al seleccionar la opción correcta.
   - Se ilumina en **rojo** si se elige una opción errónea, iluminando simultáneamente la opción correcta en **verde**.
 - Transición automática fluida a la siguiente pregunta tras la evaluación.
-- Botón de retroceso para volver al menú inicial en cualquier momento con diálogo de confirmación en una sola línea.
+- Botón de retroceso para volver al menú inicial en cualquier momento con diálogo de confirmación.
 - Marcador en vivo de preguntas respondidas, aciertos y fallos con barra de progreso.
 
 ### 3. 🏛️ Test de capitales (254 territorios o por continente)
-- Ampliado para abarcar los **254 territorios y naciones del mundo** (o el subconjunto del continente seleccionado), permitiendo practicar tanto capitales de países soberanos como de territorios autónomos y de ultramar.
+- Abarca los **254 territorios y naciones del mundo** (o el subconjunto del continente seleccionado), permitiendo practicar tanto capitales de países soberanos como de territorios autónomos y de ultramar.
 - Presenta el país en una cabecera dividida: **bandera fija a la izquierda sin reborde** y **nombre/continente a la derecha**.
-- **12 opciones de capitales únicas ordenadas alfabéticamente en español** en una columna vertical (12 filas x 1 columna) con nombres ajustados para garantizar una sola línea y evitar desbordamientos o movimientos indeseados.
+- **12 opciones de capitales únicas ordenadas alfabéticamente en español** en una columna vertical (12 filas x 1 columna) con nombres ajustados para garantizar una sola línea y evitar desbordamientos.
 - Las 12 tarjetas de capital se expanden ocupando uniformemente toda la pantalla.
 - Mismo feedback visual interactivo y transición automática.
 
-### 4. 🌐 Globo terráqueo 3D interactivo
+### 4. 🔀 Test mixto (254 países • Bandera + Capital)
+- Nuevo modo accesible desde el menú principal con **borde rojo distintivo (`#EF4444`)** y etiqueta indicativa `254 PAÍSES`.
+- Presenta el nombre del país en la cabecera y una cuadrícula de **8 banderas parecidas en 4 filas y 2 columnas** (1 correcta y 7 distractores elegidos inteligentemente por familias visuales o geográficas: escandinavas, stanes, crucíferas británicas, tricolores eslavas, africanas, árabes, etc.).
+- **Mecánica de evaluación en dos fases:**
+  1. **Selección de bandera:** El usuario debe elegir primero la bandera. Si falla, se contabiliza de inmediato como error en bandera y se revela la capital correcta.
+  2. **Escritura de capital:** Si acierta la bandera, se activa automáticamente la caja de texto para escribir el nombre de la capital.
+- **Validador inteligente de capitales (`ValidadorCapital`):**
+  - Insensible a mayúsculas, minúsculas, tildes (p. ej. *Valparaiso* por *Valparaíso*) y espacios sobrantes.
+  - Admite sustitución de caracteres nórdicos o especiales (p. ej. *O* por *Ø* en Tórshavn, *C* por *Ç* en Curazao/Curaçao) y guiones por espacios.
+  - Permite nombres internacionales y en inglés comunes (p. ej. *Dakar* en lugar de *Dacar*, *Beijing* por *Pekín*).
+  - En países con múltiples capitales oficiales (Sudáfrica, Bolivia, Países Bajos, etc.), se valida como correcta cualquiera de ellas y se muestran las alternativas.
+- Botón de **Rendirse** que permite avanzar mostrando la capital correcta si no se recuerda, contando como fallo en capital.
+- **Cascada de estadísticas:** Al alcanzar un porcentaje en el Test Mixto, las puntuaciones de Banderas y Capitales se elevan automáticamente a dicho porcentaje como mínimo.
+
+### 5. 🌐 Globo terráqueo 3D interactivo
 - Acceso directo desde el botón `[ 🌐 Globo 3D ]` en la cabecera del menú principal.
 - **Proyección ortográfica esférica 3D en tiempo real:**
   - Renderizado nativo por GPU en Compose Canvas a 60/120 FPS.
@@ -50,37 +64,38 @@ Al pulsar sobre cualquiera de los dos modos de juego, la aplicación despliega u
   - **Auto-giro:** Botón para activar o pausar una rotación orbital continua automática.
   - **Botón de centrado:** Restablece la vista original o centra el planeta sobre el país seleccionado.
 - **Vista previa de nombres de países clara y legible:**
-  - En la superficie del globo, los países visibles proyectan marcadores luminosos y etiquetas con fondo oscuro de alto contraste y texto blanco nítido, permitiendo identificar claramente las naciones antes y después de pulsar.
+  - En la superficie del globo, los países visibles proyectan marcadores luminosos y etiquetas con fondo oscuro de alto contraste y texto blanco nítido.
 - **Buscador integrado con autocompletado:**
   - Permite escribir el nombre de cualquier país o capital y el globo rotará automáticamente para centrarlo y seleccionarlo con animación suave.
 - **Tarjeta de detalle de país:**
-  - Al pulsar cualquier país en el globo, se despliega una tarjeta inferior con su **bandera en alta resolución**, **nombre oficial**, **capital oficial**, badges de continente/región y soberanía, coordenadas geográficas (latitud y longitud) y botón para centrar la cámara.
+  - Al pulsar cualquier país en el globo, se despliega una tarjeta inferior con su **bandera en alta resolución**, **nombre oficial**, **capital oficial**, badges de continente/región y soberanía, coordenadas geográficas y botón para centrar la cámara.
 
-### 5. 📊 Resumen del test y estadísticas dinámicas
-- Pantalla de resumen detallado al finalizar el test:
-  - Cajas de **Acertadas** y **Falladas** con texto centrado tanto vertical como horizontalmente.
-  - Porcentaje de acierto global o regional.
-  - Pestañas de filtrado: **Todas**, **Acertadas** y **Falladas**. Si una categoría no tiene elementos (por ejemplo, 0 fallos), muestra un mensaje descriptivo en una sola línea felicitando o explicando el resultado.
-  - Detalle individual de cada pregunta con bandera, país y respuestas con ajuste dinámico de tamaño de texto.
-  - **Propagación de récords:** Al completar un test global, la aplicación calcula y actualiza de forma automática las mejores puntuaciones para cada uno de los continentes individuales.
-  - Botones de acción directa: **Volver al menú** o **Repetir**.
-- **Apartado de estadísticas:** Botón en menú principal con reborde amarillo, franja superior indicativa `PUNTUACIONES` y selector interactivo con chips rápidos identificados por su paleta de colores para consultar las mejores puntuaciones obtenidas en **Global**, **Europa**, **África**, **Asia**, **Oceanía**, **Sudamérica & Antártida** y **Norteamérica & Centroamérica**.
+### 6. 📊 Resumen del test, filtros y desglose de fallos
+- Pantalla de resumen detallado con recálculo dinámico de métricas:
+  - Tarjeta de resumen con gran porcentaje, aciertos y fallos.
+  - **Filtro por categorías:** Chips horizontales para filtrar resultados totales, aciertos y fallos:
+    - En tests globales: por continente (*Europa*, *Norteamérica*, *Centroamérica*, *Sudamérica*, *Asia*, *África*, *Oceanía*, *Antártida*) y soberanía (*Independientes*, *Dependientes*).
+    - En tests regionales: por *Independientes* y *Dependientes*.
+  - **Filtro por tipo de fallo en Test Mixto:** Estructura idéntica y simétrica a los otros tests con pestañas dedicadas:
+    - `Todas`, `Acertadas`, `Falladas`
+    - Subpestañas de fallos: `Todos fallos`, `F. Bandera`, `F. Capital`
+    - Desglose visual en el resumen con cajas independientes de **Fallo bandera** y **Fallo capital**.
+  - Detalle individual de cada respuesta con estado, bandera elegida y capital escrita/correcta.
+  - **Propagación de récords:** Al completar un test global, se calculan y actualizan automáticamente las puntuaciones para cada continente.
+- **Apartado de estadísticas:** Tarjeta de 3 columnas en menú principal para consultar récords de Banderas, Capitales y Mixto en todos los ámbitos.
 
-### 6. 📖 Listado de países (País • Capital • Bandera)
-- Botón en menú principal con reborde verde, franja superior indicativa `LISTADO` y contenido centrado verticalmente.
-- Atlas de consulta con las 254 naciones ordenadas alfabéticamente en español (por ejemplo, Yibuti en la 'Y').
-- **Ajuste automático de tipografía (`NombrePaisAutoAjustable` y `CapitalAutoAjustable`):** Mide dinámicamente el ancho horizontal en pantalla y reduce suavemente la fuente tanto del nombre del país como de la capital para que quepan íntegros en una sola línea sin cortarse jamás.
+### 7. 📖 Listado de países (País • Capital • Bandera)
+- Atlas con las 254 naciones ordenadas alfabéticamente en español (incluyendo *República Democrática del Congo*).
+- **Ajuste automático de tipografía (`NombrePaisAutoAjustable`, `CapitalAutoAjustable` y `DependienteDeAutoAjustable`):** Mide dinámicamente el ancho y reduce el tamaño de letra para que jamás se corte ningún texto de dependencias ni nombres largos.
 - Buscador en tiempo real por nombre de país, capital o código ISO.
-- Distinción regional detallada en el continente americano: **Norteamérica** (Cian), **Centroamérica** (Verde lima tropical `#84CC16`) y **Sudamérica** (Púrpura), distinguiéndose claramente de **Asia** (Rojo intenso `#EF4444`).
-- Cajas de estado (**Soberano/Territorio**) y **Continente/Región** de idéntico tamaño uniforme (92x24 dp), ambas con reborde y color dorado distintivo para Soberano que no coincide con ningún continente.
-- Filtros rápidos por categoría: *Todos (254)*, *Soberanos (195)*, *Territorios (59)*, *Europa*, *Norteamérica*, *Centroamérica*, *Sudamérica*, *Asia*, *África*, *Oceanía* y *Antártida*.
-- Banderas en tamaño amplio y sin marcos/bordes para una visualización limpia de banderas cuadradas o irregulares.
+- Distinción regional detallada: **Norteamérica** (Cian), **Centroamérica** (Verde lima tropical `#84CC16`), **Sudamérica** (Púrpura), etc.
+- Badges uniformes de estado (**Soberano/Territorio**) y región.
+- Filtros rápidos por continente y grado de soberanía.
 
-### 7. 🎨 Interfaz responsiva y menú principal
-- Menú principal donde los 4 botones principales se expanden ocupando el 100% de la altura de la pantalla, con tipografía ampliada para títulos (23 sp), subtítulos (13.5 sp), descripciones (15 sp) y estadísticas (17.5 sp).
-- **Cabecera equilibrada:** Título e icono de MyGeography perfectamente centrados horizontalmente en pantalla con botón interactivo `[ 🌐 Globo 3D ]` fijado en la esquina superior derecha.
-- Iconografía clara y degradados visuales para cada funcionalidad.
-- 100% Offline: todas las banderas empaquetadas localmente en `assets/flags/`, coordenadas geográficas y polígonos continentales integrados sin dependencia de internet.
+### 8. 🎨 Interfaz responsiva y menú principal
+- Menú principal responsivo con los 5 bloques expandidos uniformemente ocupando la pantalla completa.
+- Iconografía clara y tema oscuro moderno (*Dark Geography*).
+- 100% Offline sin dependencias externas en tiempo de ejecución.
 
 ---
 

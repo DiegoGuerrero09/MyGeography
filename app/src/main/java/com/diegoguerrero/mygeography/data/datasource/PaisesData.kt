@@ -66,7 +66,7 @@ object PaisesData {
         Pais(codigo = "co", nombre = "Colombia", capital = "Bogotá", continente = Continente.AMERICA, esSoberano = true),
         Pais(codigo = "km", nombre = "Comoras", capital = "Moroni", continente = Continente.AFRICA, esSoberano = true),
         Pais(codigo = "cg", nombre = "Congo", capital = "Brazzaville", continente = Continente.AFRICA, esSoberano = true),
-        Pais(codigo = "cd", nombre = "Congo (Rep. Dem.)", capital = "Kinsasa", continente = Continente.AFRICA, esSoberano = true),
+        Pais(codigo = "cd", nombre = "República Democrática del Congo", capital = "Kinsasa", continente = Continente.AFRICA, esSoberano = true),
         Pais(codigo = "kp", nombre = "Corea del Norte", capital = "Pionyang", continente = Continente.ASIA, esSoberano = true),
         Pais(codigo = "kr", nombre = "Corea del Sur", capital = "Seúl", continente = Continente.ASIA, esSoberano = true),
         Pais(codigo = "ci", nombre = "Costa de Marfil", capital = "Yamusukro / Abiyán", continente = Continente.AFRICA, esSoberano = true),

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,6 +27,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.diegoguerrero.mygeography.data.model.Continente
+import com.diegoguerrero.mygeography.data.model.Pais
 import com.diegoguerrero.mygeography.data.model.RegionQuiz
 import com.diegoguerrero.mygeography.data.model.RespuestaQuiz
 import com.diegoguerrero.mygeography.data.model.TipoQuiz
@@ -35,10 +38,54 @@ import com.diegoguerrero.mygeography.ui.components.BanderaImage
 import com.diegoguerrero.mygeography.ui.screens.quiz.TextoAjustable
 import com.diegoguerrero.mygeography.ui.theme.*
 
+private val codigosSudamerica = setOf(
+    "ar", "bo", "br", "cl", "co", "ec", "fk", "gf", "gy", "pe", "py", "sr", "uy", "ve"
+)
+
+private val codigosNorteamerica = setOf(
+    "ca", "us", "mx", "bm", "gl", "pm"
+)
+
+private val codigosAntartida = setOf(
+    "aq", "bv", "gs", "hm", "tf"
+)
+
+private enum class FiltroCategoriaResultados(val label: String) {
+    TODOS("Todos"),
+    INDEPENDIENTES("Independientes"),
+    DEPENDIENTES("Dependientes"),
+    AFRICA("África"),
+    ANTARTIDA("Antártida"),
+    ASIA("Asia"),
+    CENTROAMERICA("Centroamérica"),
+    EUROPA("Europa"),
+    NORTEAMERICA("Norteamérica"),
+    OCEANIA("Oceanía"),
+    SUDAMERICA("Sudamérica")
+}
+
+private fun coincideCategoria(pais: Pais, filtro: FiltroCategoriaResultados): Boolean {
+    return when (filtro) {
+        FiltroCategoriaResultados.TODOS -> true
+        FiltroCategoriaResultados.INDEPENDIENTES -> pais.esSoberano
+        FiltroCategoriaResultados.DEPENDIENTES -> !pais.esSoberano
+        FiltroCategoriaResultados.EUROPA -> pais.continente == Continente.EUROPA
+        FiltroCategoriaResultados.NORTEAMERICA -> pais.codigo in codigosNorteamerica
+        FiltroCategoriaResultados.CENTROAMERICA -> pais.continente == Continente.AMERICA && pais.codigo !in codigosNorteamerica && pais.codigo !in codigosSudamerica
+        FiltroCategoriaResultados.SUDAMERICA -> pais.codigo in codigosSudamerica
+        FiltroCategoriaResultados.ASIA -> pais.continente == Continente.ASIA
+        FiltroCategoriaResultados.AFRICA -> pais.continente == Continente.AFRICA
+        FiltroCategoriaResultados.OCEANIA -> pais.continente == Continente.OCEANIA
+        FiltroCategoriaResultados.ANTARTIDA -> pais.codigo in codigosAntartida || pais.continente == Continente.ANTARTIDA
+    }
+}
+
 private enum class FiltroResultados(val titulo: String) {
     TODAS("Todas"),
     ACERTADAS("Acertadas"),
-    FALLADAS("Falladas")
+    FALLADAS("Falladas"),
+    FALLO_BANDERA("Fallo bandera"),
+    FALLO_CAPITAL("Fallo capital")
 }
 
 @Composable
@@ -49,21 +96,21 @@ fun ResultadosScreen(
     onVolverAlMenu: () -> Unit,
     onReiniciarQuiz: () -> Unit
 ) {
+    var filtroCategoria by remember { mutableStateOf(FiltroCategoriaResultados.TODOS) }
     var filtroSeleccionado by remember { mutableStateOf(FiltroResultados.TODAS) }
 
-    val total = respuestas.size
-    val acertadas = respuestas.count { it.esCorrecta }
-    val falladas = respuestas.count { !it.esCorrecta }
-    val porcentaje = if (total > 0) ((acertadas.toFloat() / total.toFloat()) * 100).toInt() else 0
+    val totalGlobal = respuestas.size
+    val acertadasGlobal = respuestas.count { it.esCorrecta }
+    val porcentajeGlobal = if (totalGlobal > 0) ((acertadasGlobal.toFloat() / totalGlobal.toFloat()) * 100).toInt() else 0
 
     // Guardar el récord en estadísticas
     val context = LocalContext.current
     val statsManager = remember { EstadisticasManager(context) }
     val repository = remember { PaisesRepository() }
 
-    LaunchedEffect(porcentaje) {
+    LaunchedEffect(porcentajeGlobal) {
         // Guardar el porcentaje del ámbito jugado
-        statsManager.guardarPorcentaje(tipoQuiz, region, porcentaje)
+        statsManager.guardarPorcentaje(tipoQuiz, region, porcentajeGlobal)
 
         // Si se jugó el test global, calcular y actualizar también los récords de cada continente
         if (region == RegionQuiz.GLOBAL) {
@@ -80,12 +127,47 @@ fun ResultadosScreen(
         }
     }
 
-    val respuestasFiltradas = remember(filtroSeleccionado, respuestas) {
-        when (filtroSeleccionado) {
-            FiltroResultados.TODAS -> respuestas
-            FiltroResultados.ACERTADAS -> respuestas.filter { it.esCorrecta }
-            FiltroResultados.FALLADAS -> respuestas.filter { !it.esCorrecta }
+    // Si el test es global, permitir filtrar por continente, independientes o dependientes.
+    // Si no es global, solo por dependientes e independientes.
+    val categoriasDisponibles = remember(region) {
+        if (region == RegionQuiz.GLOBAL) {
+            FiltroCategoriaResultados.values().toList()
+        } else {
+            listOf(
+                FiltroCategoriaResultados.TODOS,
+                FiltroCategoriaResultados.INDEPENDIENTES,
+                FiltroCategoriaResultados.DEPENDIENTES
+            )
         }
+    }
+
+    // Filtrar respuestas por la categoría seleccionada
+    val respuestasPorCategoria = remember(filtroCategoria, respuestas) {
+        respuestas.filter { coincideCategoria(it.pregunta.paisCorrecto, filtroCategoria) }
+    }
+
+    val totalCategoria = respuestasPorCategoria.size
+    val acertadasCategoria = respuestasPorCategoria.count { it.esCorrecta }
+    val falladasCategoria = respuestasPorCategoria.count { !it.esCorrecta }
+    val fallosBanderaCategoria = respuestasPorCategoria.count { !it.esCorrecta && it.falloEnBandera }
+    val fallosCapitalCategoria = respuestasPorCategoria.count { !it.esCorrecta && !it.falloEnBandera }
+    val porcentajeCategoria = if (totalCategoria > 0) ((acertadasCategoria.toFloat() / totalCategoria.toFloat()) * 100).toInt() else 0
+
+    // Filtrar por el estado de acierto/fallo dentro de la categoría
+    val respuestasFiltradas = remember(filtroSeleccionado, respuestasPorCategoria) {
+        when (filtroSeleccionado) {
+            FiltroResultados.TODAS -> respuestasPorCategoria
+            FiltroResultados.ACERTADAS -> respuestasPorCategoria.filter { it.esCorrecta }
+            FiltroResultados.FALLADAS -> respuestasPorCategoria.filter { !it.esCorrecta }
+            FiltroResultados.FALLO_BANDERA -> respuestasPorCategoria.filter { !it.esCorrecta && it.falloEnBandera }
+            FiltroResultados.FALLO_CAPITAL -> respuestasPorCategoria.filter { !it.esCorrecta && !it.falloEnBandera }
+        }
+    }
+
+    val colorTema = when (tipoQuiz) {
+        TipoQuiz.BANDERAS -> PrimaryBlue
+        TipoQuiz.CAPITALES -> AccentGold
+        TipoQuiz.MIXTO -> Color(0xFFEF4444)
     }
 
     Scaffold(
@@ -109,8 +191,8 @@ fun ResultadosScreen(
                             .weight(1f)
                             .height(50.dp),
                         shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.5.dp, PrimaryBlue),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue)
+                        border = androidx.compose.foundation.BorderStroke(1.5.dp, colorTema),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colorTema)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Replay,
@@ -127,18 +209,18 @@ fun ResultadosScreen(
                             .weight(1.3f)
                             .height(50.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                        colors = ButtonDefaults.buttonColors(containerColor = colorTema)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Home,
                             contentDescription = null,
-                            tint = DarkBackground,
+                            tint = if (tipoQuiz == TipoQuiz.MIXTO) Color.White else DarkBackground,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             "Volver al menú",
-                            color = DarkBackground,
+                            color = if (tipoQuiz == TipoQuiz.MIXTO) Color.White else DarkBackground,
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 14.sp
                         )
@@ -156,19 +238,58 @@ fun ResultadosScreen(
         ) {
             item {
                 Spacer(modifier = Modifier.height(16.dp))
-                // Tarjeta de Resumen General
+                // Tarjeta de Resumen General recalculada con la categoría seleccionada
                 CardResumenGeneral(
                     tipoQuiz = tipoQuiz,
                     region = region,
-                    total = total,
-                    acertadas = acertadas,
-                    falladas = falladas,
-                    porcentaje = porcentaje
+                    total = totalCategoria,
+                    acertadas = acertadasCategoria,
+                    falladas = falladasCategoria,
+                    fallosBandera = fallosBanderaCategoria,
+                    fallosCapital = fallosCapitalCategoria,
+                    porcentaje = porcentajeCategoria
                 )
             }
 
+            // Chips horizontales de categorías (continentes, dependientes, independientes)
             item {
-                // Selector de pestañas para filtrar
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(categoriasDisponibles) { cat ->
+                        val count = respuestas.count { coincideCategoria(it.pregunta.paisCorrecto, cat) }
+                        val esActivo = cat == filtroCategoria
+                        FilterChip(
+                            selected = esActivo,
+                            onClick = { filtroCategoria = cat },
+                            label = {
+                                Text(
+                                    text = "${cat.label} ($count)",
+                                    fontSize = 12.sp,
+                                    fontWeight = if (esActivo) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = DarkCard,
+                                labelColor = TextSecondary,
+                                selectedContainerColor = colorTema,
+                                selectedLabelColor = if (tipoQuiz == TipoQuiz.MIXTO) Color.White else DarkBackground
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                borderColor = if (esActivo) colorTema else DarkCardBorder,
+                                selectedBorderColor = colorTema,
+                                enabled = true,
+                                selected = esActivo
+                            ),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    }
+                }
+            }
+
+            item {
+                // Selector de pestañas para filtrar por aciertos y fallos
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -177,16 +298,18 @@ fun ResultadosScreen(
                         .padding(4.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    FiltroResultados.values().forEach { filtro ->
-                        val cantidad = when (filtro) {
-                            FiltroResultados.TODAS -> total
-                            FiltroResultados.ACERTADAS -> acertadas
-                            FiltroResultados.FALLADAS -> falladas
-                        }
-
-                        val esSeleccionado = filtro == filtroSeleccionado
-                        val bg = if (esSeleccionado) PrimaryBlue else Color.Transparent
-                        val textCol = if (esSeleccionado) DarkBackground else TextSecondary
+                    val tabsPrincipales = listOf(
+                        FiltroResultados.TODAS to totalCategoria,
+                        FiltroResultados.ACERTADAS to acertadasCategoria,
+                        FiltroResultados.FALLADAS to falladasCategoria
+                    )
+                    tabsPrincipales.forEach { (filtro, cantidad) ->
+                        val esSeleccionado = filtroSeleccionado == filtro ||
+                                (filtro == FiltroResultados.FALLADAS && (filtroSeleccionado == FiltroResultados.FALLO_BANDERA || filtroSeleccionado == FiltroResultados.FALLO_CAPITAL))
+                        val bg = if (esSeleccionado) colorTema else Color.Transparent
+                        val textCol = if (esSeleccionado) {
+                            if (tipoQuiz == TipoQuiz.MIXTO) Color.White else DarkBackground
+                        } else TextSecondary
 
                         Button(
                             onClick = { filtroSeleccionado = filtro },
@@ -203,6 +326,50 @@ fun ResultadosScreen(
                                 fontSize = 12.sp,
                                 fontWeight = if (esSeleccionado) FontWeight.ExtraBold else FontWeight.Medium
                             )
+                        }
+                    }
+                }
+
+                // En el Test Mixto, permitir filtrar por tipo de fallo con estructura idéntica
+                if (tipoQuiz == TipoQuiz.MIXTO) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(DarkCard)
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        val tabsFallos = listOf(
+                            FiltroResultados.FALLADAS to "Todos fallos ($falladasCategoria)",
+                            FiltroResultados.FALLO_BANDERA to "F. Bandera ($fallosBanderaCategoria)",
+                            FiltroResultados.FALLO_CAPITAL to "F. Capital ($fallosCapitalCategoria)"
+                        )
+                        tabsFallos.forEach { (filtro, texto) ->
+                            val esSeleccionado = filtroSeleccionado == filtro
+                            val bg = if (esSeleccionado) WrongRed else Color.Transparent
+                            val textCol = if (esSeleccionado) Color.White else TextSecondary
+
+                            Button(
+                                onClick = { filtroSeleccionado = filtro },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = bg,
+                                    contentColor = textCol
+                                ),
+                                contentPadding = PaddingValues(vertical = 8.dp, horizontal = 2.dp)
+                            ) {
+                                Text(
+                                    text = texto,
+                                    fontSize = 11.5.sp,
+                                    fontWeight = if (esSeleccionado) FontWeight.ExtraBold else FontWeight.Medium,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
                     }
                 }
@@ -238,6 +405,8 @@ fun ResultadosScreen(
                                 text = when (filtroSeleccionado) {
                                     FiltroResultados.ACERTADAS -> "No tuviste ningún acierto en este test."
                                     FiltroResultados.FALLADAS -> "¡Excelente! No cometiste ningún fallo en este test."
+                                    FiltroResultados.FALLO_BANDERA -> "¡Excelente! No cometiste ningún fallo en bandera."
+                                    FiltroResultados.FALLO_CAPITAL -> "¡Excelente! No cometiste ningún fallo en capital."
                                     else -> "No hay respuestas disponibles."
                                 },
                                 color = TextSecondary,
@@ -273,21 +442,37 @@ private fun CardResumenGeneral(
     total: Int,
     acertadas: Int,
     falladas: Int,
+    fallosBandera: Int = 0,
+    fallosCapital: Int = 0,
     porcentaje: Int
 ) {
     val shape = RoundedCornerShape(20.dp)
     val tituloModo = if (region == RegionQuiz.GLOBAL) {
-        if (tipoQuiz == TipoQuiz.BANDERAS) "Test de banderas" else "Test de capitales"
+        when (tipoQuiz) {
+            TipoQuiz.BANDERAS -> "Test de banderas"
+            TipoQuiz.CAPITALES -> "Test de capitales"
+            TipoQuiz.MIXTO -> "Test mixto"
+        }
     } else {
-        val base = if (tipoQuiz == TipoQuiz.BANDERAS) "Test de banderas" else "Test de capitales"
+        val base = when (tipoQuiz) {
+            TipoQuiz.BANDERAS -> "Test de banderas"
+            TipoQuiz.CAPITALES -> "Test de capitales"
+            TipoQuiz.MIXTO -> "Test mixto"
+        }
         "$base • ${region.nombre}"
+    }
+
+    val colorTemaCard = when (tipoQuiz) {
+        TipoQuiz.BANDERAS -> PrimaryBlue
+        TipoQuiz.CAPITALES -> AccentGold
+        TipoQuiz.MIXTO -> Color(0xFFEF4444)
     }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(6.dp, shape)
-            .border(1.5.dp, PrimaryBlue.copy(alpha = 0.4f), shape),
+            .border(1.5.dp, colorTemaCard.copy(alpha = 0.4f), shape),
         colors = CardDefaults.cardColors(containerColor = DarkCard),
         shape = shape
     ) {
@@ -323,7 +508,7 @@ private fun CardResumenGeneral(
 
             Text(
                 text = tituloModo,
-                color = PrimaryBlue,
+                color = colorTemaCard,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -350,7 +535,7 @@ private fun CardResumenGeneral(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Dos bloques: Acertadas y Falladas (texto centrado vertical y horizontalmente)
+            // Dos bloques principales: Acertadas y Falladas
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -440,6 +625,79 @@ private fun CardResumenGeneral(
                             fontWeight = FontWeight.SemiBold,
                             textAlign = TextAlign.Center
                         )
+                    }
+                }
+            }
+
+            // Desglose de fallos en Test Mixto con estructura simétrica
+            if (tipoQuiz == TipoQuiz.MIXTO) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Fallo en Bandera
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .border(1.dp, WrongRedBorder.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = WrongRedBg.copy(alpha = 0.65f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 10.dp, horizontal = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "$fallosBandera",
+                                color = WrongRed,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Fallo bandera",
+                                color = WrongRed,
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+
+                    // Fallo en Capital
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .border(1.dp, WrongRedBorder.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
+                        colors = CardDefaults.cardColors(containerColor = WrongRedBg.copy(alpha = 0.65f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 10.dp, horizontal = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "$fallosCapital",
+                                color = WrongRed,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Fallo capital",
+                                color = WrongRed,
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
@@ -551,6 +809,78 @@ private fun ItemDetalleRespuesta(
                                     text = "Correcta: ${paisCorrecto.capital}",
                                     color = CorrectGreen,
                                     fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+
+                    TipoQuiz.MIXTO -> {
+                        if (respuesta.esCorrecta) {
+                            Column(modifier = Modifier.padding(top = 2.dp)) {
+                                Text(
+                                    text = "¡Bandera y capital acertadas!",
+                                    color = CorrectGreen,
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = "Capital: ${paisCorrecto.capital}",
+                                    color = TextSecondary,
+                                    fontSize = 11.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        } else {
+                            Column(modifier = Modifier.padding(top = 2.dp)) {
+                                if (respuesta.falloEnBandera) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(bottom = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = "Fallo bandera: ",
+                                            color = WrongRed,
+                                            fontSize = 11.sp
+                                        )
+                                        BanderaImage(
+                                            codigo = respuesta.opcionSeleccionada.codigo,
+                                            modifier = Modifier.size(width = 20.dp, height = 13.dp),
+                                            borderWidth = 0.dp,
+                                            elevation = 0.dp
+                                        )
+                                        Spacer(modifier = Modifier.width(3.dp))
+                                        Text(
+                                            text = "(${respuesta.opcionSeleccionada.nombre})",
+                                            color = TextMuted,
+                                            fontSize = 10.5.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                } else if (respuesta.seHaRendido) {
+                                    Text(
+                                        text = "Te has rendido en la capital",
+                                        color = WrongRed,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                } else if (!respuesta.capitalEscrita.isNullOrBlank()) {
+                                    Text(
+                                        text = "Escribiste: \"${respuesta.capitalEscrita}\"",
+                                        color = WrongRed,
+                                        fontSize = 11.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                Text(
+                                    text = "Capital: ${paisCorrecto.capital}",
+                                    color = CorrectGreen,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis

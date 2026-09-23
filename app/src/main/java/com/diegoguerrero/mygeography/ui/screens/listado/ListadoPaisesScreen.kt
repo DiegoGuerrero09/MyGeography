@@ -768,13 +768,9 @@ private fun ItemPaisCard(
 
                 if (!pais.esSoberano && !pais.estadoSoberano.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Dependiente de: ${pais.estadoSoberano}",
-                        color = Color(0xFFFBBF24),
-                        fontSize = 10.5.sp,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1,
-                        softWrap = false
+                    DependienteDeAutoAjustable(
+                        estadoSoberano = pais.estadoSoberano,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
@@ -1076,3 +1072,60 @@ private fun CapitalModalAutoAjustable(
         )
     }
 }
+
+/**
+ * Componente que mide el espacio disponible y reduce dinámicamente el tamaño de la fuente
+ * para que el texto "Dependiente de: ..." quepa en una sola línea completa sin cortarse.
+ */
+@Composable
+private fun DependienteDeAutoAjustable(
+    estadoSoberano: String,
+    modifier: Modifier = Modifier
+) {
+    BoxWithConstraints(modifier = modifier) {
+        val maxWidthPx = constraints.maxWidth
+        val textMeasurer = rememberTextMeasurer()
+        val textoCompleto = "Dependiente de: $estadoSoberano"
+
+        var currentSizeSp by remember(textoCompleto, maxWidthPx) {
+            val initialSize = if (maxWidthPx <= 0) {
+                10.5f
+            } else {
+                val targetWidth = (maxWidthPx - 4).coerceAtLeast(1)
+                var size = 10.5f
+                while (size > 5f) {
+                    val result = textMeasurer.measure(
+                        text = AnnotatedString(textoCompleto),
+                        style = TextStyle(
+                            fontSize = size.sp,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                    if (result.size.width <= targetWidth) {
+                        break
+                    }
+                    size -= 0.35f
+                }
+                size
+            }
+            mutableFloatStateOf(initialSize)
+        }
+
+        Text(
+            text = textoCompleto,
+            color = Color(0xFFFBBF24),
+            fontSize = currentSizeSp.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            softWrap = false,
+            onTextLayout = { layoutResult ->
+                if (layoutResult.hasVisualOverflow && currentSizeSp > 5f) {
+                    currentSizeSp -= 0.5f
+                }
+            }
+        )
+    }
+}
+

@@ -129,4 +129,141 @@ class PaisesRepository {
             )
         }
     }
+
+    private val gruposBanderasSimilares: List<Set<String>> = listOf(
+        // Cruz escandinava / nórdicos
+        setOf("no", "se", "dk", "fi", "is", "ax", "fo"),
+        // Cantón con Union Jack (británicas / commonwealth)
+        setOf("gb", "au", "nz", "fj", "tv", "bm", "ky", "fk", "ms", "sh", "tc", "vg", "ck", "nu", "pn", "gs", "io"),
+        // Centroamérica franjas azul-blanco-azul
+        setOf("gt", "hn", "sv", "ni", "cr"),
+        // Tricolores eslavas (blanco-azul-rojo)
+        setOf("ru", "sk", "si", "hr", "rs", "cz"),
+        // Países de Asia Central (-stán)
+        setOf("kz", "kg", "tj", "tm", "uz", "af", "pk"),
+        // Colores panárabes (rojo, blanco, negro, verde)
+        setOf("eg", "iq", "sy", "ye", "jo", "ps", "kw", "ae", "sd", "ly"),
+        // Colores panafricanos (verde, amarillo, rojo)
+        setOf("sn", "ml", "gn", "cm", "cg", "cd", "bj", "tg", "gh", "et", "gw", "st"),
+        // Gran Colombia (amarillo, azul, rojo)
+        setOf("co", "ve", "ec"),
+        // Cruz del Sur
+        setOf("au", "nz", "ws", "pg", "br"),
+        // Media luna y estrella / símbolos islámicos
+        setOf("tr", "tn", "dz", "az", "my", "pk", "mr", "ly", "sg", "uz", "tm", "km"),
+        // Rojo y blanco horizontales / verticales / bicolores
+        setOf("at", "lv", "lb", "pe", "ca", "mc", "id", "pl", "sg", "mt", "bh", "qa", "ge"),
+        // Azul y amarillo / azul-amarillo-rojo
+        setOf("se", "ua", "kz", "pw", "ro", "td", "ad", "md"),
+        // Tricolores verticales con verde/blanco/naranja o verde/blanco/rojo
+        setOf("ie", "ci", "it", "mx", "ng", "dz", "sa"),
+        // Negro, rojo y amarillo
+        setOf("de", "be", "ao", "ug"),
+        // Islas del Caribe / Antillas
+        setOf("ag", "bs", "bb", "dm", "gd", "jm", "kn", "lc", "vc", "tt", "aw", "cw", "sx", "mf", "bl", "pr", "ai", "ms", "tc", "vg", "vi"),
+        // Islas del Pacífico / Oceanía
+        setOf("fm", "mh", "pw", "ki", "nr", "tv", "ws", "to", "vu", "sb", "fj", "ck", "nu", "tk"),
+        // África Austral
+        setOf("za", "na", "bw", "zw", "mz", "sz", "ls"),
+        // África Oriental
+        setOf("ke", "tz", "ug", "rw", "bi", "ss", "so", "dj", "er"),
+        // Magreb / Norte de África
+        setOf("ma", "dz", "tn", "ly", "eg", "eh", "mr"),
+        // África Occidental
+        setOf("sn", "gm", "gn", "gw", "sl", "lr", "ci", "ml", "bf", "ne", "ng", "bj", "tg"),
+        // Sudeste Asiático
+        setOf("th", "la", "kh", "vn", "mm", "my", "sg", "id", "ph", "bn", "tl"),
+        // Asia Oriental
+        setOf("cn", "jp", "kr", "kp", "tw", "mn", "hk", "mo"),
+        // Sur de Asia
+        setOf("in", "pk", "bd", "lk", "np", "bt", "mv"),
+        // Países Bálticos
+        setOf("ee", "lv", "lt"),
+        // Balcanes
+        setOf("gr", "al", "mk", "bg", "rs", "ba", "hr", "me", "xk", "ro"),
+        // Europa Occidental
+        setOf("fr", "nl", "be", "lu", "mc"),
+        // Península Ibérica y Mediterráneo
+        setOf("es", "pt", "ad", "gi"),
+        // Islas Británicas
+        setOf("gb", "im", "je", "gg", "ie"),
+        // Cono Sur
+        setOf("ar", "uy", "py", "cl", "bo", "br"),
+        // Guayanas y norte de Sudamérica
+        setOf("gy", "sr", "gf", "ve"),
+        // Regiones polares / Antártida
+        setOf("aq", "tf", "bv", "gs", "hm")
+    )
+
+    /**
+     * Genera el Test Mixto:
+     * - 8 opciones de banderas parecidas (1 correcta + 7 distractores) en 4 filas y 2 columnas.
+     * - Se priorizan banderas con estructuras, símbolos o colores similares, o países vecinos.
+     */
+    fun generarQuizMixto(
+        region: RegionQuiz = RegionQuiz.GLOBAL,
+        incluirDependientes: Boolean = true
+    ): List<QuizPregunta> {
+        val universo = if (incluirDependientes) obtenerTodos() else obtenerIndependientes()
+        val preguntasBarajadas = filtrarPorRegion(universo, region).shuffled()
+
+        val universoPorCodigo = universo.associateBy { it.codigo }
+
+        return preguntasBarajadas.mapIndexed { index, paisCorrecto ->
+            val distractores = mutableListOf<Pais>()
+
+            // 1. Obtener candidatos de grupos con banderas similares / países vecinos
+            val candidatosSimilares = gruposBanderasSimilares
+                .filter { paisCorrecto.codigo in it }
+                .flatMap { it }
+                .distinct()
+                .filter { it != paisCorrecto.codigo }
+                .mapNotNull { universoPorCodigo[it] }
+                .filter { !sonBanderasConfusas(it.codigo, paisCorrecto.codigo) }
+                .shuffled()
+
+            for (candidato in candidatosSimilares) {
+                if (distractores.none { it.codigo == candidato.codigo || sonBanderasConfusas(it.codigo, candidato.codigo) }) {
+                    distractores.add(candidato)
+                    if (distractores.size == 7) break
+                }
+            }
+
+            // 2. Si se necesitan más distractores, completar con países de la misma región o continente
+            if (distractores.size < 7) {
+                val candidatosRegion = universo
+                    .filter { it.codigo != paisCorrecto.codigo && perteneceARegion(it, region) && !sonBanderasConfusas(it.codigo, paisCorrecto.codigo) }
+                    .shuffled()
+
+                for (candidato in candidatosRegion) {
+                    if (distractores.none { it.codigo == candidato.codigo || sonBanderasConfusas(it.codigo, candidato.codigo) }) {
+                        distractores.add(candidato)
+                        if (distractores.size == 7) break
+                    }
+                }
+            }
+
+            // 3. Si aún faltan distractores, completar con el resto del universo
+            if (distractores.size < 7) {
+                val restoUniverso = universo
+                    .filter { it.codigo != paisCorrecto.codigo && !sonBanderasConfusas(it.codigo, paisCorrecto.codigo) }
+                    .shuffled()
+
+                for (candidato in restoUniverso) {
+                    if (distractores.none { it.codigo == candidato.codigo || sonBanderasConfusas(it.codigo, candidato.codigo) }) {
+                        distractores.add(candidato)
+                        if (distractores.size == 7) break
+                    }
+                }
+            }
+
+            val opciones = (distractores + paisCorrecto).shuffled()
+
+            QuizPregunta(
+                numeroPregunta = index + 1,
+                paisCorrecto = paisCorrecto,
+                opciones = opciones
+            )
+        }
+    }
 }

@@ -10,5 +10,10 @@ enum class TipoQuiz(val titulo: String, val descripcion: String, val totalPregun
         titulo = "Test de capitales",
         descripcion = "195 países",
         totalPreguntas = 195
+    ),
+    MIXTO(
+        titulo = "Test mixto",
+        descripcion = "254 países",
+        totalPreguntas = 254
     )
 }
