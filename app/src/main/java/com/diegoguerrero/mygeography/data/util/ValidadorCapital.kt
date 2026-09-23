@@ -315,12 +315,11 @@ object ValidadorCapital {
     fun esCapitalValida(pais: Pais, entradaUsuario: String): Boolean {
         val entradaNorm = normalizar(entradaUsuario)
         if (entradaNorm.isBlank()) return false
-        val entradaSinEspacios = entradaNorm.replace(" ", "")
 
         // 1. Verificar cada una de las partes de la cadena capital del país (separadas por "/")
         val partesCapital = pais.capital.split("/").map { normalizar(it) }
         for (parte in partesCapital) {
-            if (parte == entradaNorm || parte.replace(" ", "") == entradaSinEspacios) {
+            if (parte == entradaNorm) {
                 return true
             }
         }
@@ -329,7 +328,7 @@ object ValidadorCapital {
         val variantes = variantesPorCodigoPais[pais.codigo] ?: emptyList()
         for (v in variantes) {
             val vNorm = normalizar(v)
-            if (vNorm == entradaNorm || vNorm.replace(" ", "") == entradaSinEspacios) {
+            if (vNorm == entradaNorm) {
                 return true
             }
         }
@@ -346,11 +345,10 @@ object ValidadorCapital {
         if (partes.size <= 1) return emptyList()
 
         val entradaNorm = normalizar(entradaUsuario)
-        val entradaSinEspacios = entradaNorm.replace(" ", "")
 
         return partes.filter { parte ->
             val pNorm = normalizar(parte)
-            pNorm != entradaNorm && pNorm.replace(" ", "") != entradaSinEspacios
+            pNorm != entradaNorm
         }
     }
 }
