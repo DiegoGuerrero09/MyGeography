@@ -149,7 +149,9 @@ fun QuizScreen(
                     tipoQuiz = uiState.tipoQuiz,
                     pregunta = pregunta,
                     modoCompacto = modoCompactoTeclado,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
                 )
 
                 // Distribución de opciones que ocupa todo el espacio libre de la pantalla:
@@ -425,6 +427,7 @@ private fun CabeceraPregunta(
 ) {
     Card(
         modifier = modifier
+            .wrapContentHeight()
             .shadow(3.dp, RoundedCornerShape(14.dp))
             .border(1.dp, DarkCardBorder, RoundedCornerShape(14.dp)),
         colors = CardDefaults.cardColors(containerColor = DarkCard),
@@ -537,33 +540,52 @@ private fun CabeceraPregunta(
                     ) {
                         TextoAjustable(
                             texto = pregunta.paisCorrecto.nombre,
+                            modifier = Modifier.weight(1f, fill = false),
                             color = TextPrimary,
                             fontWeight = FontWeight.ExtraBold,
                             textAlign = TextAlign.Center,
-                            baseSize = 16
+                            baseSize = 15
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "•  ${pregunta.paisCorrecto.continente.nombre}",
                             color = TextMuted,
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.Medium
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 } else {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 7.dp),
+                            .padding(horizontal = 12.dp, vertical = 5.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = "¿QUÉ BANDERA Y CAPITAL ES?",
-                            color = Color(0xFFEF4444),
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "¿QUÉ BANDERA Y CAPITAL ES?",
+                                color = Color(0xFFEF4444),
+                                fontSize = 9.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.8.sp,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "•  ${pregunta.paisCorrecto.continente.nombre}",
+                                color = TextMuted,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(2.dp))
 
@@ -572,16 +594,7 @@ private fun CabeceraPregunta(
                             color = TextPrimary,
                             fontWeight = FontWeight.ExtraBold,
                             textAlign = TextAlign.Center,
-                            baseSize = 20
-                        )
-
-                        Spacer(modifier = Modifier.height(1.dp))
-
-                        Text(
-                            text = pregunta.paisCorrecto.continente.nombre,
-                            color = TextMuted,
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.Medium
+                            baseSize = 17
                         )
                     }
                 }
@@ -812,13 +825,13 @@ private fun OpcionCapitalCard(
 @Composable
 fun TextoAjustable(
     texto: String,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier.fillMaxWidth(),
     color: Color = TextPrimary,
     fontWeight: FontWeight = FontWeight.Bold,
     textAlign: TextAlign = TextAlign.Center,
     baseSize: Int = 18
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+    BoxWithConstraints(modifier = modifier) {
         val maxWidthPx = constraints.maxWidth
         val textMeasurer = rememberTextMeasurer()
 
@@ -857,6 +870,7 @@ fun TextoAjustable(
             textAlign = textAlign,
             maxLines = 1,
             softWrap = false,
+            overflow = TextOverflow.Ellipsis,
             onTextLayout = { layoutResult ->
                 if (layoutResult.hasVisualOverflow && currentSizeSp > 5f) {
                     currentSizeSp -= 0.5f
@@ -976,6 +990,7 @@ private fun ContenidoQuizMixto(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
+                .wrapContentHeight()
                 .border(
                     width = 1.dp,
                     color = if (estaHabilitadoCampo) Celeste.copy(alpha = 0.6f) else DarkCardBorder,
